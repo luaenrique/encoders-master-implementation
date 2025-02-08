@@ -130,9 +130,13 @@ from datasets import load_dataset
 
 # Importing the Amazon dataset recommended by Cristiano
 amazon_dataset = load_dataset("fancyzhx/amazon_polarity")
+imdb_dataset = load_dataset("stanfordnlp/imdb")
+ag_news_dataset = load_dataset("fancyzhx/ag_news")
+yelp_dataset = load_dataset("Yelp/yelp_review_full")
+snli_dataset = load_dataset("stanfordnlp/snli")
+persent_dataset = load_dataset("community-datasets/per_sent")
 
-
-datasets = [amazon_dataset]
+datasets = [amazon_dataset, imdb_dataset, ag_news_dataset, yelp_dataset, snli_dataset, persent_dataset]
 
 bertModel = GenericEncoderModel(
     model_name='bert-base-uncased', 
@@ -144,20 +148,47 @@ bertModel = GenericEncoderModel(
 models = [bertModel]
 
 
-def preprocess_function(examples, tokenizer):
-    return tokenizer(examples["content"], truncation=True, padding="max_length", max_length=128)
+def preprocess_function(examples, tokenizer, contentKey):
+    return tokenizer(examples[contentKey], truncation=True, padding="max_length", max_length=128)
 
-for dataset in datasets:
-    contentList = dataset['train'].take(6000)['content']
-    labelList = dataset['train'].take(6000)['label']
+datasetStructure = {
+    0: {
+        'contentKey': 'content',
+        'labelKey': 'label'
+    },
+    1: {
+        'contentKey': 'text',
+        'labelKey': 'label'
+    },
+    2: {
+        'contentKey': 'text',
+        'labelKey': 'label'
+    },
+    3: {
+        'contentKey': 'text',
+        'labelKey': 'label'
+    },
+    4: {
+        'contentKey': 'premise', #check if it makes sense, because the dataset has 2 columns: premise and hypothesis
+        'labelKey': 'label'
+    }
+}
 
-    contentTestList = dataset['test'].take(1000)['content']
-    labelTestList = dataset['test'].take(1000)['label']
+for countDataset in range (0, len(datasets)):
+    dataset = datasets[countDataset]
+
+    structure = datasetStructure.get(countDataset, None)
+
+    contentList = dataset['train'].take(10)[structure['contentKey']]
+    labelList = dataset['train'].take(1)[structure['labelKey']]
+
+    contentTestList = dataset['test'].take(10)[structure['contentKey']]
+    labelTestList = dataset['test'].take(1)[structure['labelKey']]
 
     for model in models:
-        train_dataset = dataset['train'].take(6000).map(lambda x: preprocess_function(x, model.tokenizer), batched=True)
-        test_dataset = dataset['test'].take(1000).map(lambda x: preprocess_function(x, model.tokenizer), batched=True)
-        train_dataset = train_dataset.map(remove_columns=['content', 'title'])
+        train_dataset = dataset['train'].take(10).map(lambda x: preprocess_function(x, model.tokenizer, structure['contentKey']), batched=True)
+        test_dataset = dataset['test'].take(1).map(lambda x: preprocess_function(x, model.tokenizer, structure['contentKey']), batched=True)
+        train_dataset = train_dataset.map(remove_columns=[structure['contentKey'], 'title'])
 
         example = train_dataset[0]
         print(example.keys())
