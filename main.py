@@ -127,20 +127,38 @@ class GenericEncoderModel:
         trainer.train()
         self.trainer = trainer
 
-    def evaluate(self, output_csv_path='metrics.csv'):
+    def store_predictions(self, dataset, predictions, output_csv_path):
+        """
+        Store predictions along with true labels to a CSV file.
+        """
+        with open(output_csv_path, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(['prediction', 'label', 'text']) 
+            for text, label, prediction in zip(dataset['text'], dataset['label'], predictions):
+                writer.writerow([prediction, label, text])
+
+    def evaluate(self):
         metrics = self.trainer.evaluate()
+        output_csv_path=f"metrics_{self.model_name}.csv"
         
-        # Add the metrics to a CSV file
+        predictions = []
+        for batch in self.trainer.get_test_dataloader():
+            outputs = self.model(**batch)
+            logits = outputs.logits
+            predicted_class = torch.argmax(logits, dim=-1)
+            predictions.extend(predicted_class.cpu().numpy())
+
+        # Store predictions in CSV file
+        self.store_predictions(self.trainer.eval_dataset, predictions, output_csv_path=f"predictions_{self.model_name}.csv")
+        
+        # Write metrics to CSV file
         with open(output_csv_path, mode='a', newline='') as file:
             writer = csv.writer(file)
-            
-            # Check if the file is empty, write the header if so
             file_is_empty = file.tell() == 0
             if file_is_empty:
-                writer.writerow(['dataset', 'accuracy', 'micro-f1', 'macro-f1'])  # Adjust header based on your metrics
+                writer.writerow(['dataset', 'accuracy', 'micro-f1', 'macro-f1'])
             
-            # Write the metric values for this evaluation
-            writer.writerow([self.training_file_name, metrics.get('eval_accuracy', 'N/A'), 
+            writer.writerow([self.training_file_name, metrics.get('eval_accuracy', 'N/A'),
                              metrics.get('eval_micro-f1', 'N/A'), metrics.get('eval_macro-f1', 'N/A')])
 
         return metrics
