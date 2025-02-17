@@ -21,6 +21,7 @@ from transformers import EvalPrediction
 import torch
 import numpy as np
 import evaluate
+import csv
 
 from transformers import TrainingArguments, Trainer
 batch_size = 8
@@ -126,8 +127,23 @@ class GenericEncoderModel:
         trainer.train()
         self.trainer = trainer
 
-    def evaluate(self):
-        return self.trainer.evaluate()
+    def evaluate(self, output_csv_path='metrics.csv'):
+        metrics = self.trainer.evaluate()
+        
+        # Add the metrics to a CSV file
+        with open(output_csv_path, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            
+            # Check if the file is empty, write the header if so
+            file_is_empty = file.tell() == 0
+            if file_is_empty:
+                writer.writerow(['dataset', 'accuracy', 'micro-f1', 'macro-f1'])  # Adjust header based on your metrics
+            
+            # Write the metric values for this evaluation
+            writer.writerow([self.training_file_name, metrics.get('eval_accuracy', 'N/A'), 
+                             metrics.get('eval_micro-f1', 'N/A'), metrics.get('eval_macro-f1', 'N/A')])
+
+        return metrics
     
 
 
