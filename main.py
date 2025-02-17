@@ -137,12 +137,12 @@ class GenericEncoderModel:
             for text, label, prediction in zip(dataset['text'], dataset['label'], predictions):
                 writer.writerow([prediction, label, text])
 
-    def evaluate(self):
+    def evaluate(self, test_dataset):
         metrics = self.trainer.evaluate()
         output_csv_path=f"metrics_{self.model_name}.csv"
         
         predictions = []
-        for batch in self.trainer.get_test_dataloader():
+        for batch in self.trainer.get_test_dataloader(test_dataset):
             outputs = self.model(**batch)
             logits = outputs.logits
             predicted_class = torch.argmax(logits, dim=-1)
@@ -220,15 +220,15 @@ for countDataset in range (0, len(datasets)):
 
     structure = datasetStructure.get(countDataset, None)
 
-    contentList = dataset['train'].take(100)[structure['contentKey']]
-    labelList = dataset['train'].take(10)[structure['labelKey']]
+    contentList = dataset['train'][structure['contentKey']]
+    labelList = dataset['train'][structure['labelKey']]
 
-    contentTestList = dataset['test'].take(100)[structure['contentKey']]
-    labelTestList = dataset['test'].take(10)[structure['labelKey']]
+    contentTestList = dataset['test'][structure['contentKey']]
+    labelTestList = dataset['test'][structure['labelKey']]
 
 
-    train_dataset = dataset['train'].take(100).map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
-    test_dataset = dataset['test'].take(10).map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
+    train_dataset = dataset['train'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
+    test_dataset = dataset['test'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
     train_dataset = train_dataset.map(remove_columns=[structure['contentKey'], 'title'])
 
     example = train_dataset[0]
@@ -240,4 +240,4 @@ for countDataset in range (0, len(datasets)):
 
     bertModel.train(train_dataset=train_dataset, test_dataset=test_dataset)
 
-    print(bertModel.evaluate())
+    print(bertModel.evaluate(test_dataset))
