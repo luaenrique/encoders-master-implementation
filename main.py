@@ -29,15 +29,16 @@ metric_name = "accuracy"
 
 
 class GenericEncoderModel:
-    def __init__(self, model_name, training_file_name, model_type, problem_type):
+    def __init__(self, model_name, training_file_name, model_type, problem_type, num_labels):
         self.data = []
         self.model_name = model_name
         self.training_file_name = training_file_name
         self.model_type = model_type
         self.problem_type = problem_type
         self.tokenizer = self._load_tokenizer()
-        self.model = self._load_model()
         self.trainer = None
+        self.num_labels = num_labels
+        self.model = self._load_model()
 
     def _load_tokenizer(self):
         if self.model_type == 'electra':
@@ -54,8 +55,13 @@ class GenericEncoderModel:
         return tokenizer
     
     def _load_model(self):
+        # check num labels - use num from the dataset
+        # check pretrained config class https://huggingface.co/transformers/v3.0.2/main_classes/configuration.html#transformers.PretrainedConfig
+        
+        # para cada execucao, guardar arquivo com as predicoes do teste
+        
         model = AutoModelForSequenceClassification.from_pretrained(self.model_name,
-                                                           problem_type=self.problem_type)
+                                                           problem_type=self.problem_type,  config={"num_labels": self.num_labels})
         return model
 
     def compute_metrics(self, eval_preds, threshold = 0.5):
@@ -134,18 +140,10 @@ imdb_dataset = load_dataset("stanfordnlp/imdb")
 ag_news_dataset = load_dataset("fancyzhx/ag_news")
 yelp_dataset = load_dataset("Yelp/yelp_review_full")
 snli_dataset = load_dataset("stanfordnlp/snli")
-persent_dataset = load_dataset("community-datasets/per_sent")
 
-datasets = [amazon_dataset, imdb_dataset, ag_news_dataset, yelp_dataset, snli_dataset, persent_dataset]
+datasets = [amazon_dataset, imdb_dataset, ag_news_dataset, yelp_dataset, snli_dataset]
 
-bertModel = GenericEncoderModel(
-    model_name='bert-base-uncased', 
-    training_file_name='bert_training', 
-    model_type='bert', 
-    problem_type='single_label_classification'
-)
-
-models = [bertModel]
+numLabels = [2,2,4,5,3]
 
 
 def preprocess_function(examples, tokenizer, contentKey):
@@ -175,28 +173,37 @@ datasetStructure = {
 }
 
 for countDataset in range (0, len(datasets)):
+    
+    bertModel = GenericEncoderModel(
+        model_name='bert-base-uncased', 
+        training_file_name='bert_training', 
+        model_type='bert', 
+        problem_type='single_label_classification',
+        num_labels=numLabels[countDataset]
+    )
+
     dataset = datasets[countDataset]
 
     structure = datasetStructure.get(countDataset, None)
 
-    contentList = dataset['train'].take(10)[structure['contentKey']]
-    labelList = dataset['train'].take(1)[structure['labelKey']]
+    contentList = dataset['train'].take(100)[structure['contentKey']]
+    labelList = dataset['train'].take(10)[structure['labelKey']]
 
-    contentTestList = dataset['test'].take(10)[structure['contentKey']]
-    labelTestList = dataset['test'].take(1)[structure['labelKey']]
+    contentTestList = dataset['test'].take(100)[structure['contentKey']]
+    labelTestList = dataset['test'].take(10)[structure['labelKey']]
 
-    for model in models:
-        train_dataset = dataset['train'].take(10).map(lambda x: preprocess_function(x, model.tokenizer, structure['contentKey']), batched=True)
-        test_dataset = dataset['test'].take(1).map(lambda x: preprocess_function(x, model.tokenizer, structure['contentKey']), batched=True)
-        train_dataset = train_dataset.map(remove_columns=[structure['contentKey'], 'title'])
 
-        example = train_dataset[0]
-        print(example.keys())
+    train_dataset = dataset['train'].take(100).map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
+    test_dataset = dataset['test'].take(10).map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
+    train_dataset = train_dataset.map(remove_columns=[structure['contentKey'], 'title'])
 
-        print(model.tokenizer.decode(example['input_ids']))
+    example = train_dataset[0]
+    print(example.keys())
 
-        train_dataset.set_format("torch")
+    print(bertModel.tokenizer.decode(example['input_ids']))
 
-        model.train(train_dataset=train_dataset, test_dataset=test_dataset)
+    train_dataset.set_format("torch")
 
-        print(model.evaluate())
+    bertModel.train(train_dataset=train_dataset, test_dataset=test_dataset)
+
+    print(bertModel.evaluate())
