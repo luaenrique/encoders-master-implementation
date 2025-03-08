@@ -1,0 +1,2 @@
+dataset,accuracy,micro-f1,macro-f1
+bert_training,0.37,0.37,0.26523800599700154
