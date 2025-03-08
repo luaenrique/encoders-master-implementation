@@ -64,7 +64,7 @@ class GenericEncoderModel:
         # check pretrained config class https://huggingface.co/transformers/v3.0.2/main_classes/configuration.html#transformers.PretrainedConfig
         
         # para cada execucao, guardar arquivo com as predicoes do teste
-        
+        print(self.num_labels)
         model = AutoModelForSequenceClassification.from_pretrained(self.model_name,
                                                            problem_type=self.problem_type,  config={"num_labels": self.num_labels})
         return model
