@@ -179,15 +179,15 @@ ag_news_dataset = load_dataset("fancyzhx/ag_news")
 yelp_dataset = load_dataset("Yelp/yelp_review_full")
 snli_dataset = load_dataset("stanfordnlp/snli")
 
-datasets = [imdb_dataset, #amazon_dataset,
+datasets = [#imdb_dataset, #amazon_dataset,
             ag_news_dataset, yelp_dataset, snli_dataset]
 
-datasetsNames = ['imdb', 
+datasetsNames = [#'imdb', 
                  #'amazon', 
                  'agnews', 'yelp', 'snli']
 
 numLabels = [
-    2,
+    #2,
     #2,
     4,
     5,
@@ -199,23 +199,23 @@ def preprocess_function(examples, tokenizer, contentKey):
     return tokenizer(examples[contentKey], truncation=True, padding="max_length", max_length=128)
 
 datasetStructure = {
-    0: {
-        'contentKey': 'text',
-        'labelKey': 'label'
-    },
+   # 0: {
+   #     'contentKey': 'text',
+   #     'labelKey': 'label'
+   # },
    # 1: {
    #     'contentKey': 'content',
    #     'labelKey': 'label'
   #  },
+    0: {
+        'contentKey': 'text',
+        'labelKey': 'label'
+    },
+    1: {
+        'contentKey': 'text',
+        'labelKey': 'label'
+    },
     2: {
-        'contentKey': 'text',
-        'labelKey': 'label'
-    },
-    3: {
-        'contentKey': 'text',
-        'labelKey': 'label'
-    },
-    4: {
         'contentKey': 'premise',
         'labelKey': 'label'
     }
