@@ -64,7 +64,6 @@ class GenericEncoderModel:
         # check pretrained config class https://huggingface.co/transformers/v3.0.2/main_classes/configuration.html#transformers.PretrainedConfig
         
         # para cada execucao, guardar arquivo com as predicoes do teste
-        print(f"the num labels are {self.num_labels}")
         model = AutoModelForSequenceClassification.from_pretrained(self.model_name,
                                                            problem_type=self.problem_type,  num_labels=self.num_labels)
         return model
@@ -237,17 +236,17 @@ for countDataset in range (0, len(datasets)):
 
     structure = datasetStructure.get(countDataset, None)
 
-    contentList = dataset['train'].take(100)[structure['contentKey']]
-    labelList = dataset['train'].take(100)[structure['labelKey']]
+    contentList = dataset['train'][structure['contentKey']]
+    labelList = dataset['train'][structure['labelKey']]
 
-    contentTestList = dataset['test'].take(100)[structure['contentKey']]
-    labelTestList = dataset['test'].take(100)[structure['labelKey']]
+    contentTestList = dataset['test'][structure['contentKey']]
+    labelTestList = dataset['test'][structure['labelKey']]
     print(labelList)
     print(labelTestList)
 
 
-    train_dataset = dataset['train'].take(100).map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
-    test_dataset = dataset['test'].take(100).map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
+    train_dataset = dataset['train'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
+    test_dataset = dataset['test'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
     train_dataset = train_dataset.map(remove_columns=[structure['contentKey']])
 
     example = train_dataset[0]
