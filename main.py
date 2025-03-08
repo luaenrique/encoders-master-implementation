@@ -254,6 +254,7 @@ for countDataset in range (0, len(datasets)):
     print(bertModel.tokenizer.decode(example['input_ids']))
 
     train_dataset.set_format("torch")
+    test_dataset.set_format("torch")
 
     bertModel.train(train_dataset=train_dataset, test_dataset=test_dataset, dataset_name=datasetsNames[countDataset])
 
