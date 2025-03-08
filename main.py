@@ -143,7 +143,7 @@ class GenericEncoderModel:
 
     def evaluate(self, test_dataset, dataset_name):
         metrics = self.trainer.evaluate()
-        output_csv_path=f"metrics_{self.model_name}.csv"
+        output_csv_path=f"metrics_{self.model_name}_{dataset_name}.csv"
         
         predictions = []
         for batch in self.trainer.get_test_dataloader(test_dataset):
