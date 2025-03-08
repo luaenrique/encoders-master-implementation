@@ -41,6 +41,10 @@ class GenericEncoderModel:
         self.num_labels = num_labels
         self.model = self._load_model()
 
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model.to(device)
+
+
     def _load_tokenizer(self):
         if self.model_type == 'electra':
             tokenizer = ElectraTokenizer.from_pretrained(self.model_name)
@@ -102,9 +106,9 @@ class GenericEncoderModel:
             outputs["macro-f1"] = f1_macro["f1"]
         return outputs
     
-    def train(self, train_dataset, test_dataset):
+    def train(self, train_dataset, test_dataset, dataset_name):
         args = TrainingArguments(
-            self.training_file_name,
+            f"{self.training_file_name}_{dataset_name}",
             evaluation_strategy = "epoch",
             save_strategy = "epoch",
             learning_rate=2e-5,
@@ -137,7 +141,7 @@ class GenericEncoderModel:
             for text, label, prediction in zip(dataset['text'], dataset['label'], predictions):
                 writer.writerow([prediction, label, text])
 
-    def evaluate(self, test_dataset):
+    def evaluate(self, test_dataset, dataset_name):
         metrics = self.trainer.evaluate()
         output_csv_path=f"metrics_{self.model_name}.csv"
         
@@ -149,7 +153,7 @@ class GenericEncoderModel:
             predictions.extend(predicted_class.cpu().numpy())
 
         # Store predictions in CSV file
-        self.store_predictions(self.trainer.eval_dataset, predictions, output_csv_path=f"predictions_{self.model_name}.csv")
+        self.store_predictions(self.trainer.eval_dataset, predictions, output_csv_path=f"predictions_{self.model_name}_{dataset_name}.csv")
         
         # Write metrics to CSV file
         with open(output_csv_path, mode='a', newline='') as file:
@@ -175,7 +179,9 @@ ag_news_dataset = load_dataset("fancyzhx/ag_news")
 yelp_dataset = load_dataset("Yelp/yelp_review_full")
 snli_dataset = load_dataset("stanfordnlp/snli")
 
-datasets = [imdb_dataset]
+datasets = [imdb_dataset, amazon_dataset, ag_news_dataset, yelp_dataset, snli_dataset]
+
+datasetsNames = ['imdb', 'amazon', 'agnews', 'yelp', 'snli']
 
 numLabels = [2,2,4,5,3]
 
@@ -186,6 +192,22 @@ def preprocess_function(examples, tokenizer, contentKey):
 datasetStructure = {
     0: {
         'contentKey': 'text',
+        'labelKey': 'label'
+    },
+    1: {
+        'contentKey': 'content',
+        'labelKey': 'label'
+    },
+    2: {
+        'contentKey': 'text',
+        'labelKey': 'label'
+    },
+    3: {
+        'contentKey': 'text',
+        'labelKey': 'label'
+    },
+    4: {
+        'contentKey': 'premise',
         'labelKey': 'label'
     }
 }
@@ -222,6 +244,6 @@ for countDataset in range (0, len(datasets)):
 
     train_dataset.set_format("torch")
 
-    bertModel.train(train_dataset=train_dataset, test_dataset=test_dataset)
+    bertModel.train(train_dataset=train_dataset, test_dataset=test_dataset, dataset_name=datasetsNames[countDataset])
 
     print(bertModel.evaluate(test_dataset))
