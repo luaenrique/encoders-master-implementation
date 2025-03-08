@@ -51,7 +51,7 @@ class GenericEncoderModel:
         elif self.model_type == 'longformer':
             tokenizer = LongformerTokenizer.from_pretrained(self.model_name)
         elif self.model_type == 'bert':
-            tokenizer = BertTokenizer.from_pretrained(self.model_name, num_labels=self.num_labels)
+            tokenizer = BertTokenizer.from_pretrained(self.model_name, num_labels=4)
         elif self.model_type == 'roberta':
             tokenizer = RobertaTokenizer.from_pretrained(self.model_name)
         else:
