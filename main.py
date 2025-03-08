@@ -109,7 +109,7 @@ class GenericEncoderModel:
         self.model.resize_token_embeddings(len(self._load_tokenizer()))
 
         args = TrainingArguments(
-            f"{self.training_file_name}_{dataset_name}",
+            f"{self.training_file_name}_{dataset_name}_2",
             evaluation_strategy = "epoch",
             save_strategy = "epoch",
             learning_rate=2e-5,
@@ -144,7 +144,7 @@ class GenericEncoderModel:
 
     def evaluate(self, test_dataset, dataset_name):
         metrics = self.trainer.evaluate()
-        output_csv_path=f"metrics_{self.model_name}_{dataset_name}.csv"
+        output_csv_path=f"metrics_{self.model_name}_{dataset_name}_2.csv"
         
         predictions = []
         for batch in self.trainer.get_test_dataloader(test_dataset):
