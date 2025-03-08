@@ -107,6 +107,8 @@ class GenericEncoderModel:
         return outputs
     
     def train(self, train_dataset, test_dataset, dataset_name):
+        self.model.resize_token_embeddings(len(self._load_tokenizer()))
+
         args = TrainingArguments(
             f"{self.training_file_name}_{dataset_name}",
             evaluation_strategy = "epoch",
