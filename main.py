@@ -51,7 +51,7 @@ class GenericEncoderModel:
         elif self.model_type == 'longformer':
             tokenizer = LongformerTokenizer.from_pretrained(self.model_name)
         elif self.model_type == 'bert':
-            tokenizer = BertTokenizer.from_pretrained(self.model_name, num_labels=4)
+            tokenizer = BertTokenizer.from_pretrained(self.model_name)
         elif self.model_type == 'roberta':
             tokenizer = RobertaTokenizer.from_pretrained(self.model_name)
         else:
@@ -128,7 +128,7 @@ class GenericEncoderModel:
             train_dataset=train_dataset,
             eval_dataset=test_dataset,
             tokenizer=self.tokenizer,
-            compute_metrics=self.compute_metrics
+            compute_metrics=self.compute_metrics,
         )
         trainer.train()
         self.trainer = trainer
@@ -242,6 +242,8 @@ for countDataset in range (0, len(datasets)):
 
     contentTestList = dataset['test'].take(100)[structure['contentKey']]
     labelTestList = dataset['test'].take(100)[structure['labelKey']]
+    print(labelList)
+    print(labelTestList)
 
 
     train_dataset = dataset['train'].take(100).map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
