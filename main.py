@@ -66,7 +66,7 @@ class GenericEncoderModel:
         # para cada execucao, guardar arquivo com as predicoes do teste
         print(f"the num labels are {self.num_labels}")
         model = AutoModelForSequenceClassification.from_pretrained(self.model_name,
-                                                           problem_type=self.problem_type,  config={"num_labels": self.num_labels})
+                                                           problem_type=self.problem_type,  num_labels=self.num_labels)
         return model
 
     def compute_metrics(self, eval_preds, threshold = 0.5):
