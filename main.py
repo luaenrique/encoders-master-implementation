@@ -154,7 +154,7 @@ class GenericEncoderModel:
             predictions.extend(predicted_class.cpu().numpy())
 
         # Store predictions in CSV file
-        self.store_predictions(self.trainer.eval_dataset, predictions, output_csv_path=f"predictions_{self.model_name}_{dataset_name}.csv")
+        self.store_predictions(self.trainer.eval_dataset, predictions, output_csv_path=f"predictions_{self.model_name}_{dataset_name}_2.csv")
         
         # Write metrics to CSV file
         with open(output_csv_path, mode='a', newline='') as file:
@@ -180,16 +180,16 @@ ag_news_dataset = load_dataset("fancyzhx/ag_news")
 yelp_dataset = load_dataset("Yelp/yelp_review_full")
 snli_dataset = load_dataset("stanfordnlp/snli")
 
-datasets = [#imdb_dataset, #amazon_dataset,
+datasets = [#imdb_dataset, amazon_dataset,
             ag_news_dataset, yelp_dataset, snli_dataset]
 
 datasetsNames = [#'imdb', 
-                 #'amazon', 
+                 'amazon', 
                  'agnews', 'yelp', 'snli']
 
 numLabels = [
     #2,
-    #2,
+    2,
     4,
     5,
     3
@@ -204,12 +204,8 @@ datasetStructure = {
    #     'contentKey': 'text',
    #     'labelKey': 'label'
    # },
-   # 1: {
-   #     'contentKey': 'content',
-   #     'labelKey': 'label'
-  #  },
     0: {
-        'contentKey': 'text',
+        'contentKey': 'content',
         'labelKey': 'label'
     },
     1: {
@@ -217,6 +213,10 @@ datasetStructure = {
         'labelKey': 'label'
     },
     2: {
+        'contentKey': 'text',
+        'labelKey': 'label'
+    },
+    3: {
         'contentKey': 'premise',
         'labelKey': 'label'
     }
@@ -241,9 +241,6 @@ for countDataset in range (0, len(datasets)):
 
     contentTestList = dataset['test'][structure['contentKey']]
     labelTestList = dataset['test'][structure['labelKey']]
-    print(labelList)
-    print(labelTestList)
-
 
     train_dataset = dataset['train'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
     test_dataset = dataset['test'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
