@@ -202,11 +202,11 @@ def preprocess_function(examples, tokenizer, contentKey):
 
 datasetStructure = {
    # 0: {
-   #     'contentKey': 'content',
+   #     'contentKey': 'text',
    #     'labelKey': 'label'
    # },
     0: {
-        'contentKey': 'text',
+        'contentKey': 'content',
         'labelKey': 'label'
     },
     1: {
