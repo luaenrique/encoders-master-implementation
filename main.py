@@ -180,7 +180,8 @@ ag_news_dataset = load_dataset("fancyzhx/ag_news")
 yelp_dataset = load_dataset("Yelp/yelp_review_full")
 snli_dataset = load_dataset("stanfordnlp/snli")
 
-datasets = [#imdb_dataset, amazon_dataset,
+datasets = [#imdb_dataset, 
+            amazon_dataset,
             ag_news_dataset, yelp_dataset, snli_dataset]
 
 datasetsNames = [#'imdb', 
@@ -236,15 +237,14 @@ for countDataset in range (0, len(datasets)):
 
     structure = datasetStructure.get(countDataset, None)
 
-    contentList = dataset['train'].take(100)[structure['contentKey']]
-    labelList = dataset['train'].take(100)[structure['labelKey']]
+    contentList = dataset['train'][structure['contentKey']]
+    labelList = dataset['train'][structure['labelKey']]
 
-    contentTestList = dataset['test'].take(100)[structure['contentKey']]
-    labelTestList = dataset['test'].take(100)[structure['labelKey']]
-    print(labelList)
+    contentTestList = dataset['test'][structure['contentKey']]
+    labelTestList = dataset['test'][structure['labelKey']]
 
-    train_dataset = dataset['train'].take(100).map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
-    test_dataset = dataset['test'].take(100).map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
+    train_dataset = dataset['train'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
+    test_dataset = dataset['test'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
     train_dataset = train_dataset.map(remove_columns=[structure['contentKey']])
 
     example = train_dataset[0]
