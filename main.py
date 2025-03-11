@@ -181,7 +181,7 @@ yelp_dataset = load_dataset("Yelp/yelp_review_full")
 snli_dataset = load_dataset("stanfordnlp/snli")
 
 datasets = [#imdb_dataset, 
-            amazon_dataset,
+           # amazon_dataset,
             ag_news_dataset, yelp_dataset, snli_dataset]
 
 datasetsNames = [#'imdb', 
@@ -190,7 +190,7 @@ datasetsNames = [#'imdb',
 
 numLabels = [
     #2,
-    2,
+    #2,
     4,
     5,
     3
@@ -205,8 +205,12 @@ datasetStructure = {
    #     'contentKey': 'text',
    #     'labelKey': 'label'
    # },
+   # 0: {
+  #      'contentKey': 'content',
+   #    'labelKey': 'label'
+   # },
     0: {
-        'contentKey': 'content',
+        'contentKey': 'text',
         'labelKey': 'label'
     },
     1: {
@@ -214,10 +218,6 @@ datasetStructure = {
         'labelKey': 'label'
     },
     2: {
-        'contentKey': 'text',
-        'labelKey': 'label'
-    },
-    3: {
         'contentKey': 'premise',
         'labelKey': 'label'
     }
