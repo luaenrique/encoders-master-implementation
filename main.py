@@ -120,6 +120,7 @@ class GenericEncoderModel:
             load_best_model_at_end=True,
             metric_for_best_model=metric_name,
             #push_to_hub=True,
+            resume_from_checkpoint='./bert_training_amazon_2/checkpoint-60000'
         )
         trainer = Trainer(
             self.model,
@@ -185,15 +186,18 @@ datasets = [#imdb_dataset,
             ag_news_dataset, yelp_dataset, snli_dataset]
 
 datasetsNames = [#'imdb', 
-                 'amazon', 
-                 'agnews', 'yelp', 'snli']
+                 #'amazon', 
+                 'agnews', 
+                 #'yelp', 
+                 #'snli'
+                 ]
 
 numLabels = [
     #2,
     #2,
     4,
-    5,
-    3
+   # 5,
+    #3
 ]
 
 
@@ -213,14 +217,14 @@ datasetStructure = {
         'contentKey': 'text',
         'labelKey': 'label'
     },
-    1: {
-        'contentKey': 'text',
-        'labelKey': 'label'
-    },
-    2: {
-        'contentKey': 'premise',
-        'labelKey': 'label'
-    }
+   # 1: {
+   #     'contentKey': 'text',
+   #     'labelKey': 'label'
+   # },
+   # 2: {
+   #     'contentKey': 'premise',
+   #     'labelKey': 'label'
+    #}
 }
 
 for countDataset in range (0, len(datasets)):
@@ -230,7 +234,7 @@ for countDataset in range (0, len(datasets)):
         training_file_name='bert_training', 
         model_type='bert', 
         problem_type='single_label_classification',
-        num_labels=numLabels[countDataset]
+        num_labels=numLabels[countDataset],
     )
 
     dataset = datasets[countDataset]
