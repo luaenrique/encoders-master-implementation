@@ -109,7 +109,7 @@ class GenericEncoderModel:
         self.model.resize_token_embeddings(len(self._load_tokenizer()))
 
         args = TrainingArguments(
-            f"{self.training_file_name}_amazon_2",
+            f"{self.training_file_name}_{dataset_name}_2",
             evaluation_strategy = "epoch",
             save_strategy = "epoch",
             learning_rate=2e-5,
@@ -120,7 +120,6 @@ class GenericEncoderModel:
             load_best_model_at_end=True,
             metric_for_best_model=metric_name,
             #push_to_hub=True,
-            resume_from_checkpoint='./bert_training_amazon_2/checkpoint-60000'
         )
         trainer = Trainer(
             self.model,
@@ -130,7 +129,7 @@ class GenericEncoderModel:
             tokenizer=self.tokenizer,
             compute_metrics=self.compute_metrics,
         )
-        trainer.train(resume_from_checkpoint='./bert_training_amazon_2/checkpoint-60000')
+        trainer.train()
         self.trainer = trainer
 
     def store_predictions(self, dataset, predictions, output_csv_path):
@@ -183,21 +182,22 @@ snli_dataset = load_dataset("stanfordnlp/snli")
 
 datasets = [#imdb_dataset, 
            # amazon_dataset,
-            ag_news_dataset, yelp_dataset, snli_dataset]
+            # ag_news_dataset, 
+            yelp_dataset, snli_dataset]
 
 datasetsNames = [#'imdb', 
                  #'amazon', 
-                 'agnews', 
-                 #'yelp', 
-                 #'snli'
+                 #'agnews', 
+                 'yelp', 
+                 'snli'
                  ]
 
 numLabels = [
     #2,
     #2,
-    4,
-   # 5,
-    #3
+    # 4,
+    5,
+    3
 ]
 
 
@@ -213,18 +213,18 @@ datasetStructure = {
   #      'contentKey': 'content',
    #    'labelKey': 'label'
    # },
+   # 0: {
+   #     'contentKey': 'text',
+   #     'labelKey': 'label'
+  #  },
     0: {
         'contentKey': 'text',
         'labelKey': 'label'
     },
-   # 1: {
-   #     'contentKey': 'text',
-   #     'labelKey': 'label'
-   # },
-   # 2: {
-   #     'contentKey': 'premise',
-   #     'labelKey': 'label'
-    #}
+    1: {
+        'contentKey': 'premise',
+        'labelKey': 'label'
+    }
 }
 
 for countDataset in range (0, len(datasets)):
