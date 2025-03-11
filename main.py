@@ -109,7 +109,7 @@ class GenericEncoderModel:
         self.model.resize_token_embeddings(len(self._load_tokenizer()))
 
         args = TrainingArguments(
-            f"{self.training_file_name}_{dataset_name}_2",
+            f"{self.training_file_name}_amazon_2",
             evaluation_strategy = "epoch",
             save_strategy = "epoch",
             learning_rate=2e-5,
@@ -130,7 +130,7 @@ class GenericEncoderModel:
             tokenizer=self.tokenizer,
             compute_metrics=self.compute_metrics,
         )
-        trainer.train()
+        trainer.train(resume_from_checkpoint='./bert_training_amazon_2/checkpoint-60000')
         self.trainer = trainer
 
     def store_predictions(self, dataset, predictions, output_csv_path):
