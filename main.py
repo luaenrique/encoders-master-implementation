@@ -112,6 +112,7 @@ class GenericEncoderModel:
             f"{self.training_file_name}_{dataset_name}_2",
             evaluation_strategy = "steps",
             save_strategy = "steps",
+            save_steps=10000,
             learning_rate=2e-5,
             per_device_train_batch_size=batch_size,
             per_device_eval_batch_size=batch_size,
