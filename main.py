@@ -129,7 +129,7 @@ class GenericEncoderModel:
             tokenizer=self.tokenizer,
             compute_metrics=self.compute_metrics,
         )
-        trainer.train(resume_from_checkpoint='./bert_training_yelp_2/checkpoint-325000')
+        trainer.train(resume_from_checkpoint='./bert_training_yelp_2/checkpoint-243750')
         self.trainer = trainer
 
     def store_predictions(self, dataset, predictions, output_csv_path):
