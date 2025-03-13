@@ -119,7 +119,6 @@ class GenericEncoderModel:
             weight_decay=0.01,
             load_best_model_at_end=True,
             metric_for_best_model=metric_name,
-            resume_from_checkpoint='./bert_training_yelp_2/checkpoint-325000'
             #push_to_hub=True,
         )
         trainer = Trainer(
@@ -130,7 +129,7 @@ class GenericEncoderModel:
             tokenizer=self.tokenizer,
             compute_metrics=self.compute_metrics,
         )
-        trainer.train()
+        trainer.train(resume_from_checkpoint='./bert_training_yelp_2/checkpoint-325000')
         self.trainer = trainer
 
     def store_predictions(self, dataset, predictions, output_csv_path):
