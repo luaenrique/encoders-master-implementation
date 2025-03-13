@@ -119,6 +119,7 @@ class GenericEncoderModel:
             weight_decay=0.01,
             load_best_model_at_end=True,
             metric_for_best_model=metric_name,
+            resume_from_checkpoint='./bert_training_yelp_2/checkpoint-325000'
             #push_to_hub=True,
         )
         trainer = Trainer(
@@ -183,13 +184,15 @@ snli_dataset = load_dataset("stanfordnlp/snli")
 datasets = [#imdb_dataset, 
            # amazon_dataset,
             # ag_news_dataset, 
-            yelp_dataset, snli_dataset]
+            yelp_dataset, 
+            #snli_dataset
+            ]
 
 datasetsNames = [#'imdb', 
                  #'amazon', 
                  #'agnews', 
                  'yelp', 
-                 'snli'
+        #         'snli'
                  ]
 
 numLabels = [
@@ -197,7 +200,7 @@ numLabels = [
     #2,
     # 4,
     5,
-    3
+#    3
 ]
 
 
@@ -221,10 +224,10 @@ datasetStructure = {
         'contentKey': 'text',
         'labelKey': 'label'
     },
-    1: {
-        'contentKey': 'premise',
-        'labelKey': 'label'
-    }
+  # 1: {
+  #      'contentKey': 'premise',
+  #      'labelKey': 'label'
+  #  }
 }
 
 for countDataset in range (0, len(datasets)):
