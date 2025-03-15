@@ -255,10 +255,11 @@ for countDataset in range (0, len(datasets)):
     #contentList = dataset['train'][f"{structure['contentKey'][0]} [SEP] {structure['contentKey'][1]}"]
     labelList = dataset['train'][structure['labelKey']]
 
-    print(labelList)
-
     #contentTestList = dataset['test'][structure['contentKey']]
-    #labelTestList = dataset['test'][structure['labelKey']]
+    labelTestList = dataset['test'][structure['labelKey']]
+
+    print(set(labelList))  # For the training dataset
+    print(set(labelTestList))  # For the test dataset
 
     train_dataset = dataset['train'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey'][0], structure['contentKey'][1]), batched=True)
     test_dataset = dataset['test'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey'][0], structure['contentKey'][1]), batched=True)
