@@ -264,7 +264,9 @@ for countDataset in range (0, len(datasets)):
     train_dataset = dataset['train'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey'][0], structure['contentKey'][1]), batched=True)
     test_dataset = dataset['test'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey'][0], structure['contentKey'][1]), batched=True)
     train_dataset = train_dataset.map(remove_columns=[structure['contentKey'][0], structure['contentKey'][1]])
-
+    train_dataset = train_dataset.filter(lambda x: x['label'] != -1)
+    test_dataset = test_dataset.filter(lambda x: x['label'] != -1)
+    
     example = train_dataset[0]
     print(example.keys())
 
