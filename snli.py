@@ -253,7 +253,9 @@ for countDataset in range (0, len(datasets)):
     structure = datasetStructure.get(countDataset, None)
 
     #contentList = dataset['train'][f"{structure['contentKey'][0]} [SEP] {structure['contentKey'][1]}"]
-    #labelList = dataset['train'][structure['labelKey']]
+    labelList = dataset['train'][structure['labelKey']]
+
+    print(labelList)
 
     #contentTestList = dataset['test'][structure['contentKey']]
     #labelTestList = dataset['test'][structure['labelKey']]
