@@ -129,7 +129,7 @@ class GenericEncoderModel:
             tokenizer=self.tokenizer,
             compute_metrics=self.compute_metrics,
         )
-        trainer.train()
+        trainer.train(resume_from_checkpoint='./bert_training_snli_2/checkpoint-343355')
         self.trainer = trainer
 
     def store_predictions(self, dataset, predictions, output_csv_path):
@@ -138,9 +138,9 @@ class GenericEncoderModel:
         """
         with open(output_csv_path, mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(['prediction', 'label', 'text']) 
-            for text, label, prediction in zip(dataset['text'], dataset['label'], predictions):
-                writer.writerow([prediction, label, text])
+            writer.writerow(['prediction', 'label', 'premise']) 
+            for premise, label, prediction in zip(dataset['premise'], dataset['label'], predictions):
+                writer.writerow([prediction, label, premise])
 
     def evaluate(self, test_dataset, dataset_name):
         metrics = self.trainer.evaluate()
