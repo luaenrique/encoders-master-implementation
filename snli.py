@@ -109,7 +109,7 @@ class GenericEncoderModel:
         self.model.resize_token_embeddings(len(self._load_tokenizer()))
 
         args = TrainingArguments(
-            f"{self.training_file_name}_{dataset_name}_2",
+            f"{self.training_file_name}_{dataset_name}_3",
             evaluation_strategy = "epoch",
             save_strategy = "epoch",
             learning_rate=2e-5,
@@ -138,13 +138,13 @@ class GenericEncoderModel:
         """
         with open(output_csv_path, mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(['prediction', 'label', 'premise']) 
-            for premise, label, prediction in zip(dataset['premise'], dataset['label'], predictions):
-                writer.writerow([prediction, label, premise])
+            writer.writerow(['prediction', 'label', 'premise', 'hypothesis']) 
+            for premise, hypothesis, label, prediction in zip(dataset['premise'], dataset['hypothesis'], dataset['label'], predictions):
+                writer.writerow([prediction, label, premise, hypothesis])
 
     def evaluate(self, test_dataset, dataset_name):
         metrics = self.trainer.evaluate()
-        output_csv_path=f"metrics_{self.model_name}_{dataset_name}_2.csv"
+        output_csv_path=f"metrics_{self.model_name}_{dataset_name}_3.csv"
         
         predictions = []
         for batch in self.trainer.get_test_dataloader(test_dataset):
