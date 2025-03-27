@@ -232,7 +232,7 @@ datasetStructure = {
 for countDataset in range (0, len(datasets)):
     
     bertModel = GenericEncoderModel(
-        model_name='roberta-base-uncased', 
+        model_name='roberta-base', 
         training_file_name='roberta_training', 
         model_type='roberta', 
         problem_type='single_label_classification',
