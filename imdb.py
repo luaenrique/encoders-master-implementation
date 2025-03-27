@@ -187,7 +187,7 @@ datasets = [imdb_dataset,
             #snli_dataset
             ]
 
-datasetsNames = [#'imdb', 
+datasetsNames = ['imdb', 
                  #'amazon', 
                  #'agnews', 
                  #'yelp', 
