@@ -1,0 +1,2 @@
+dataset,accuracy,micro-f1,macro-f1
+electra_training,0.91072,0.91072,0.9107199977144319
