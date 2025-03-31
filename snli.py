@@ -129,7 +129,7 @@ class GenericEncoderModel:
             tokenizer=self.tokenizer,
             compute_metrics=self.compute_metrics,
         )
-        trainer.train(resume_from_checkpoint='./bert_training_snli_2/checkpoint-343355')
+        trainer.train()
         self.trainer = trainer
 
     def store_predictions(self, dataset, predictions, output_csv_path):
@@ -241,9 +241,9 @@ datasetStructure = {
 for countDataset in range (0, len(datasets)):
     
     bertModel = GenericEncoderModel(
-        model_name='bert-base-uncased', 
-        training_file_name='bert_training', 
-        model_type='bert', 
+        model_name='roberta-base', 
+        training_file_name='roberta_training', 
+        model_type='roberta', 
         problem_type='single_label_classification',
         num_labels=numLabels[countDataset],
     )
