@@ -129,7 +129,7 @@ class GenericEncoderModel:
             tokenizer=self.tokenizer,
             compute_metrics=self.compute_metrics,
         )
-        trainer.train(resume_from_checkpoint="roberta_training_snli_3/checkpoint-206013")
+        trainer.train()
         self.trainer = trainer
 
     def store_predictions(self, dataset, predictions, output_csv_path):
@@ -238,12 +238,16 @@ datasetStructure = {
     }
 }
 
+# google/electra-base-discriminator
+# roberta-base
+
+
 for countDataset in range (0, len(datasets)):
     
     bertModel = GenericEncoderModel(
-        model_name='roberta-base', 
-        training_file_name='roberta_training', 
-        model_type='roberta', 
+        model_name='google/electra-base-discriminator', 
+        training_file_name='electra_training', 
+        model_type='electra', 
         problem_type='single_label_classification',
         num_labels=numLabels[countDataset],
     )
