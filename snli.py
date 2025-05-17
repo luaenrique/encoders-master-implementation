@@ -245,9 +245,9 @@ datasetStructure = {
 for countDataset in range (0, len(datasets)):
     
     bertModel = GenericEncoderModel(
-        model_name='google/electra-base-discriminator', 
-        training_file_name='electra_training', 
-        model_type='electra', 
+        model_name='allenai/longformer-base-4096', 
+        training_file_name='longformer_training', 
+        model_type='longformer', 
         problem_type='single_label_classification',
         num_labels=numLabels[countDataset],
     )
