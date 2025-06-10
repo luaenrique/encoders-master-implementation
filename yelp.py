@@ -248,13 +248,22 @@ for countDataset in range (0, len(datasets)):
     #    num_labels=numLabels[countDataset],
     #)
 
+
     bertModel = GenericEncoderModel(
-        model_name='allenai/longformer-base-4096', 
-        training_file_name='longformer_training', 
-        model_type='longformer', 
+        model_name='roberta-base', 
+        training_file_name='roberta_training', 
+        model_type='roberta', 
         problem_type='single_label_classification',
         num_labels=numLabels[countDataset],
     )
+
+    #bertModel = GenericEncoderModel(
+    #    model_name='allenai/longformer-base-4096', 
+    #    training_file_name='longformer_training', 
+    #    model_type='longformer', 
+    #    problem_type='single_label_classification',
+    #    num_labels=numLabels[countDataset],
+    #)
 
 
     dataset = datasets[countDataset]
