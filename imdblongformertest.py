@@ -23,9 +23,10 @@ import numpy as np
 import evaluate
 import csv
 import gc
+import os
 
 from transformers import TrainingArguments, Trainer
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  
 # OTIMIZAÇÕES DE MEMÓRIA
 batch_size = 2  # Reduzido de 8 para 2
 gradient_accumulation_steps = 4  # Para simular batch_size = 8
