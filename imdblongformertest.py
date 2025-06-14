@@ -48,7 +48,8 @@ class GenericEncoderModel:
         self.num_labels = num_labels
         self.model = self._load_model()
 
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
         self.model.to(device)
         
         # Limpeza de memória após carregar modelo
