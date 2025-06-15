@@ -322,7 +322,6 @@ for countDataset in range (0, len(datasets)):
     test_dataset = dataset['test'].map(
         lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), 
         batched=True,
-        remove_columns=[structure['contentKey']]  # Remover colunas desnecessárias
     )
     
     cleanup_memory()  # Limpeza após processamento
