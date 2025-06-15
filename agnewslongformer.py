@@ -172,7 +172,7 @@ class GenericEncoderModel:
         torch.cuda.empty_cache() if torch.cuda.is_available() else None
         gc.collect()
         
-        trainer.train(resume_from_checkpoint='./longformer_training_imdb_2/checkpoint-15625')
+        trainer.train()
         self.trainer = trainer
 
     def store_predictions(self, dataset, predictions, output_csv_path):
