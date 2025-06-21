@@ -129,8 +129,29 @@ class GenericEncoderModel:
             tokenizer=self.tokenizer,
             compute_metrics=self.compute_metrics,
         )
-        trainer.train(resume_from_checkpoint="./longformer_training_imdb_2/checkpoint-15625")
+        trainer.train()
         self.trainer = trainer
+
+    def store_logits(self, dataset, dataset_name):
+        self.model.eval()
+        all_logits = []
+        all_labels = []
+        all_texts = []
+
+        dataloader = self.trainer.get_test_dataloader(dataset)
+        for batch in dataloader:
+            with torch.no_grad():
+                outputs = self.model(**batch)
+                logits = outputs.logits.cpu().numpy()
+                all_logits.append(logits)
+                all_labels.append(batch["labels"].cpu().numpy())
+                all_texts.append(batch["input_ids"].cpu().numpy())  # ou a string original, se preferir
+
+        logits = np.concatenate(all_logits)
+        labels = np.concatenate(all_labels)
+
+        np.savez(f"logits_{self.model_name}_{dataset_name}.npz", logits=logits, labels=labels)
+
 
     def store_predictions(self, dataset, predictions, output_csv_path):
         """
@@ -267,3 +288,6 @@ for countDataset in range (0, len(datasets)):
     bertModel.train(train_dataset=train_dataset, test_dataset=test_dataset, dataset_name=datasetsNames[countDataset])
 
     print(bertModel.evaluate(test_dataset, dataset_name=datasetsNames[countDataset]))
+    bertModel.store_logits(test_dataset, "imdb_test")
+    bertModel.store_logits(train_dataset, "imdb_train")
+
