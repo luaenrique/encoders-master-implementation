@@ -256,9 +256,9 @@ datasetStructure = {
 for countDataset in range (0, len(datasets)):
     
     bertModel = GenericEncoderModel(
-        model_name='allenai/longformer-base-4096', 
-        training_file_name='longformer_training', 
-        model_type='longformer', 
+        model_name='google-bert/bert-base-uncased', 
+        training_file_name='bert_training', 
+        model_type='bert', 
         problem_type='single_label_classification',
         num_labels=numLabels[countDataset],
     )
