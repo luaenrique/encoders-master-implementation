@@ -243,42 +243,58 @@ datasetStructure = {
 
 
 for countDataset in range (0, len(datasets)):
+    models = [
+        GenericEncoderModel(
+            model_name='google/electra-base-discriminator', 
+            training_file_name='electra_training', 
+            model_type='electra', 
+            problem_type='single_label_classification',
+            num_labels=numLabels[countDataset],
+        ),
+        GenericEncoderModel(
+            model_name='roberta-base', 
+            training_file_name='roberta_training', 
+            model_type='roberta', 
+            problem_type='single_label_classification',
+            num_labels=numLabels[countDataset],
+        ),
+        GenericEncoderModel(
+            model_name='google-bert/bert-base-uncased', 
+            training_file_name='bert_training', 
+            model_type='bert', 
+            problem_type='single_label_classification',
+            num_labels=numLabels[countDataset],
+        )
+    ]
     
-    bertModel = GenericEncoderModel(
-        model_name='allenai/longformer-base-4096', 
-        training_file_name='longformer_training', 
-        model_type='longformer', 
-        problem_type='single_label_classification',
-        num_labels=numLabels[countDataset],
-    )
+    for bertModel in models:
+        dataset = datasets[countDataset]
 
-    dataset = datasets[countDataset]
+        structure = datasetStructure.get(countDataset, None)
 
-    structure = datasetStructure.get(countDataset, None)
+        #contentList = dataset['train'][f"{structure['contentKey'][0]} [SEP] {structure['contentKey'][1]}"]
+        labelList = dataset['train'][structure['labelKey']]
 
-    #contentList = dataset['train'][f"{structure['contentKey'][0]} [SEP] {structure['contentKey'][1]}"]
-    labelList = dataset['train'][structure['labelKey']]
+        #contentTestList = dataset['test'][structure['contentKey']]
+        labelTestList = dataset['test'][structure['labelKey']]
 
-    #contentTestList = dataset['test'][structure['contentKey']]
-    labelTestList = dataset['test'][structure['labelKey']]
+        print(set(labelList))  # For the training dataset
+        print(set(labelTestList))  # For the test dataset
 
-    print(set(labelList))  # For the training dataset
-    print(set(labelTestList))  # For the test dataset
+        train_dataset = dataset['train'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey'][0], structure['contentKey'][1]), batched=True)
+        test_dataset = dataset['test'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey'][0], structure['contentKey'][1]), batched=True)
+        train_dataset = train_dataset.map(remove_columns=[structure['contentKey'][0], structure['contentKey'][1]])
+        train_dataset = train_dataset.filter(lambda x: x['label'] != -1)
+        test_dataset = test_dataset.filter(lambda x: x['label'] != -1)
+        
+        example = train_dataset[0]
+        print(example.keys())
 
-    train_dataset = dataset['train'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey'][0], structure['contentKey'][1]), batched=True)
-    test_dataset = dataset['test'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey'][0], structure['contentKey'][1]), batched=True)
-    train_dataset = train_dataset.map(remove_columns=[structure['contentKey'][0], structure['contentKey'][1]])
-    train_dataset = train_dataset.filter(lambda x: x['label'] != -1)
-    test_dataset = test_dataset.filter(lambda x: x['label'] != -1)
-    
-    example = train_dataset[0]
-    print(example.keys())
+        print(bertModel.tokenizer.decode(example['input_ids']))
 
-    print(bertModel.tokenizer.decode(example['input_ids']))
+        train_dataset.set_format("torch")
+        test_dataset.set_format("torch")
 
-    train_dataset.set_format("torch")
-    test_dataset.set_format("torch")
+        bertModel.train(train_dataset=train_dataset, test_dataset=test_dataset, dataset_name=datasetsNames[countDataset])
 
-    bertModel.train(train_dataset=train_dataset, test_dataset=test_dataset, dataset_name=datasetsNames[countDataset])
-
-    print(bertModel.evaluate(test_dataset, dataset_name=datasetsNames[countDataset]))
+        print(bertModel.evaluate(test_dataset, dataset_name=datasetsNames[countDataset]))

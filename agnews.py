@@ -247,38 +247,53 @@ for countDataset in range (0, len(datasets)):
     #    num_labels=numLabels[countDataset],
     #)
 
-    bertModel = GenericEncoderModel(
-        model_name='roberta-base', 
-        training_file_name='roberta_training', 
-        model_type='roberta', 
-        problem_type='single_label_classification',
-        num_labels=numLabels[countDataset],
-    )
+    models = [
+        GenericEncoderModel(
+            model_name='google/electra-base-discriminator', 
+            training_file_name='electra_training', 
+            model_type='electra', 
+            problem_type='single_label_classification',
+            num_labels=numLabels[countDataset],
+        ),
+        GenericEncoderModel(
+            model_name='roberta-base', 
+            training_file_name='roberta_training', 
+            model_type='roberta', 
+            problem_type='single_label_classification',
+            num_labels=numLabels[countDataset],
+        ),
+        GenericEncoderModel(
+            model_name='google-bert/bert-base-uncased', 
+            training_file_name='bert_training', 
+            model_type='bert', 
+            problem_type='single_label_classification',
+            num_labels=numLabels[countDataset],
+        )
+    ]
+    
+    for bertModel in models:
+        dataset = datasets[countDataset]
 
+        structure = datasetStructure.get(countDataset, None)
 
+        contentList = dataset['train'][structure['contentKey']]
+        labelList = dataset['train'][structure['labelKey']]
 
-    dataset = datasets[countDataset]
+        contentTestList = dataset['test'][structure['contentKey']]
+        labelTestList = dataset['test'][structure['labelKey']]
 
-    structure = datasetStructure.get(countDataset, None)
+        train_dataset = dataset['train'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
+        test_dataset = dataset['test'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
+        train_dataset = train_dataset.map(remove_columns=[structure['contentKey']])
 
-    contentList = dataset['train'][structure['contentKey']]
-    labelList = dataset['train'][structure['labelKey']]
+        example = train_dataset[0]
+        print(example.keys())
 
-    contentTestList = dataset['test'][structure['contentKey']]
-    labelTestList = dataset['test'][structure['labelKey']]
+        print(bertModel.tokenizer.decode(example['input_ids']))
 
-    train_dataset = dataset['train'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
-    test_dataset = dataset['test'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
-    train_dataset = train_dataset.map(remove_columns=[structure['contentKey']])
+        train_dataset.set_format("torch")
+        test_dataset.set_format("torch")
 
-    example = train_dataset[0]
-    print(example.keys())
+        bertModel.train(train_dataset=train_dataset, test_dataset=test_dataset, dataset_name=datasetsNames[countDataset])
 
-    print(bertModel.tokenizer.decode(example['input_ids']))
-
-    train_dataset.set_format("torch")
-    test_dataset.set_format("torch")
-
-    bertModel.train(train_dataset=train_dataset, test_dataset=test_dataset, dataset_name=datasetsNames[countDataset])
-
-    print(bertModel.evaluate(test_dataset, dataset_name=datasetsNames[countDataset]))
+        print(bertModel.evaluate(test_dataset, dataset_name=datasetsNames[countDataset]))
