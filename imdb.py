@@ -189,7 +189,48 @@ class GenericEncoderModel:
 
         return metrics
     
+    def store_embeddings_only(self, dataset, dataset_name):
+        """
+        Store only embeddings (lighter version if you don't need logits).
+        """
+        self.model.eval()
+        all_embeddings = []
+        all_labels = []
 
+        dataloader = self.trainer.get_test_dataloader(dataset)
+        
+        for batch in dataloader:
+            with torch.no_grad():
+                outputs = self.model(**batch, output_hidden_states=True)
+                
+                # Get embeddings from the last hidden state
+                last_hidden_states = outputs.hidden_states[-1]
+                
+                # Extract embeddings based on model type
+                if self.model_type in ['bert', 'electra', 'roberta', 'longformer']:
+                    # Use [CLS] token (first token)
+                    embeddings = last_hidden_states[:, 0, :].cpu().numpy()
+                else:
+                    # Mean pooling
+                    attention_mask = batch['attention_mask'].unsqueeze(-1).expand(last_hidden_states.size()).float()
+                    sum_embeddings = torch.sum(last_hidden_states * attention_mask, 1)
+                    sum_mask = torch.clamp(attention_mask.sum(1), min=1e-9)
+                    embeddings = (sum_embeddings / sum_mask).cpu().numpy()
+                
+                all_embeddings.append(embeddings)
+                all_labels.append(batch["labels"].cpu().numpy())
+
+        embeddings = np.concatenate(all_embeddings)
+        labels = np.concatenate(all_labels)
+
+        output_file = f"embeddings_{self.model_name.replace('/', '_')}_{dataset_name}.npz"
+        np.savez_compressed(output_file, 
+                        embeddings=embeddings,
+                        labels=labels)
+        
+        print(f"Saved embeddings to {output_file}")
+        print(f"Embeddings shape: {embeddings.shape}")
+    
 
 from datasets import load_dataset
 
@@ -255,39 +296,57 @@ datasetStructure = {
 
 for countDataset in range (0, len(datasets)):
     
-    bertModel = GenericEncoderModel(
-        model_name='allenai/longformer-base-4096', 
-        training_file_name='longformer_training', 
-        model_type='longformer', 
-        problem_type='single_label_classification',
-        num_labels=numLabels[countDataset],
-    )
+    models = [
+        GenericEncoderModel(
+            model_name='google/electra-base-discriminator', 
+            training_file_name='electra_training', 
+            model_type='electra', 
+            problem_type='single_label_classification',
+            num_labels=numLabels[countDataset],
+        ),
+        GenericEncoderModel(
+            model_name='roberta-base', 
+            training_file_name='roberta_training', 
+            model_type='roberta', 
+            problem_type='single_label_classification',
+            num_labels=numLabels[countDataset],
+        ),
+        GenericEncoderModel(
+            model_name='google-bert/bert-base-uncased', 
+            training_file_name='bert_training', 
+            model_type='bert', 
+            problem_type='single_label_classification',
+            num_labels=numLabels[countDataset],
+        )
+    ]
+    
+    for bertModel in models:
+        dataset = datasets[countDataset]
 
-    dataset = datasets[countDataset]
+        structure = datasetStructure.get(countDataset, None)
 
-    structure = datasetStructure.get(countDataset, None)
+        contentList = dataset['train'][structure['contentKey']]
+        labelList = dataset['train'][structure['labelKey']]
 
-    contentList = dataset['train'][structure['contentKey']]
-    labelList = dataset['train'][structure['labelKey']]
+        contentTestList = dataset['test'][structure['contentKey']]
+        labelTestList = dataset['test'][structure['labelKey']]
 
-    contentTestList = dataset['test'][structure['contentKey']]
-    labelTestList = dataset['test'][structure['labelKey']]
+        train_dataset = dataset['train'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
+        test_dataset = dataset['test'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
+        train_dataset = train_dataset.map(remove_columns=[structure['contentKey']])
 
-    train_dataset = dataset['train'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
-    test_dataset = dataset['test'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
-    train_dataset = train_dataset.map(remove_columns=[structure['contentKey']])
+        example = train_dataset[0]
+        print(example.keys())
 
-    example = train_dataset[0]
-    print(example.keys())
+        print(bertModel.tokenizer.decode(example['input_ids']))
 
-    print(bertModel.tokenizer.decode(example['input_ids']))
+        train_dataset.set_format("torch")
+        test_dataset.set_format("torch")
 
-    train_dataset.set_format("torch")
-    test_dataset.set_format("torch")
+        bertModel.train(train_dataset=train_dataset, test_dataset=test_dataset, dataset_name=datasetsNames[countDataset])
 
-    bertModel.train(train_dataset=train_dataset, test_dataset=test_dataset, dataset_name=datasetsNames[countDataset])
-
-    print(bertModel.evaluate(test_dataset, dataset_name=datasetsNames[countDataset]))
-    bertModel.store_logits(test_dataset, "imdb_test")
-    bertModel.store_logits(train_dataset, "imdb_train")
-
+        print(bertModel.evaluate(test_dataset, dataset_name=datasetsNames[countDataset]))
+        bertModel.store_logits(test_dataset, "imdb_test")
+        bertModel.store_logits(train_dataset, "imdb_train")
+        bertModel.store_embeddings_only(test_dataset, f"imdb_test_{bertModel.model_name.split('/')[-1]}")
+        bertModel.store_embeddings_only(train_dataset, f"imdb_train_{bertModel.model_name.split('/')[-1]}")
