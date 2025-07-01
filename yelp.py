@@ -374,5 +374,5 @@ for countDataset in range (0, len(datasets)):
         
         bertModel.store_logits(test_dataset, "yelp_test")
         bertModel.store_logits(train_dataset, "yelp_train")
-        bertModel.store_embeddings_only(test_dataset, f"yelp_test_{bertModel.model_name.split('/')[-1]}")
-        bertModel.store_embeddings_only(train_dataset, f"yelp_train_{bertModel.model_name.split('/')[-1]}")
+        #bertModel.store_embeddings_only(test_dataset, f"yelp_test_{bertModel.model_name.split('/')[-1]}")
+        #bertModel.store_embeddings_only(train_dataset, f"yelp_train_{bertModel.model_name.split('/')[-1]}")
