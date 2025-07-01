@@ -189,7 +189,48 @@ class GenericEncoderModel:
 
         return metrics
     
+    def store_embeddings_only(self, dataset, dataset_name):
+        """
+        Store only embeddings (lighter version if you don't need logits).
+        """
+        self.model.eval()
+        all_embeddings = []
+        all_labels = []
 
+        dataloader = self.trainer.get_test_dataloader(dataset)
+        
+        for batch in dataloader:
+            with torch.no_grad():
+                outputs = self.model(**batch, output_hidden_states=True)
+                
+                # Get embeddings from the last hidden state
+                last_hidden_states = outputs.hidden_states[-1]
+                
+                # Extract embeddings based on model type
+                if self.model_type in ['bert', 'electra', 'roberta', 'longformer']:
+                    # Use [CLS] token (first token)
+                    embeddings = last_hidden_states[:, 0, :].cpu().numpy()
+                else:
+                    # Mean pooling
+                    attention_mask = batch['attention_mask'].unsqueeze(-1).expand(last_hidden_states.size()).float()
+                    sum_embeddings = torch.sum(last_hidden_states * attention_mask, 1)
+                    sum_mask = torch.clamp(attention_mask.sum(1), min=1e-9)
+                    embeddings = (sum_embeddings / sum_mask).cpu().numpy()
+                
+                all_embeddings.append(embeddings)
+                all_labels.append(batch["labels"].cpu().numpy())
+
+        embeddings = np.concatenate(all_embeddings)
+        labels = np.concatenate(all_labels)
+
+        output_file = f"embeddings_{self.model_name.replace('/', '_')}_{dataset_name}.npz"
+        np.savez_compressed(output_file, 
+                        embeddings=embeddings,
+                        labels=labels)
+        
+        print(f"Saved embeddings to {output_file}")
+        print(f"Embeddings shape: {embeddings.shape}")
+    
 
 from datasets import load_dataset
 
@@ -321,3 +362,5 @@ for countDataset in range (0, len(datasets)):
 
         bertModel.store_logits(test_dataset, "agnews_test")
         bertModel.store_logits(train_dataset, "agnews_train")
+        bertModel.store_embeddings_only(test_dataset, f"agnews_test_{bertModel.model_name.split('/')[-1]}")
+        bertModel.store_embeddings_only(train_dataset, f"agnews_train_{bertModel.model_name.split('/')[-1]}")
