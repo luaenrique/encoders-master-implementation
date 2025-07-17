@@ -264,3 +264,4 @@ for countDataset in range (0, len(datasets)):
     bertModel.train(train_dataset=train_dataset, test_dataset=test_dataset, dataset_name=datasetsNames[countDataset])
 
     print(bertModel.evaluate(test_dataset, dataset_name=datasetsNames[countDataset]))
+   

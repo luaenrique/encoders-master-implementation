@@ -346,7 +346,7 @@ for countDataset in range (0, len(datasets)):
         bertModel.train(train_dataset=train_dataset, test_dataset=test_dataset, dataset_name=datasetsNames[countDataset])
 
         print(bertModel.evaluate(test_dataset, dataset_name=datasetsNames[countDataset]))
-        bertModel.store_logits(test_dataset, "imdb_test")
-        bertModel.store_logits(train_dataset, "imdb_train")
-        #bertModel.store_embeddings_only(test_dataset, f"imdb_test_{bertModel.model_name.split('/')[-1]}")
-        #bertModel.store_embeddings_only(train_dataset, f"imdb_train_{bertModel.model_name.split('/')[-1]}")
+        #bertModel.store_logits(test_dataset, "imdb_test")
+        #bertModel.store_logits(train_dataset, "imdb_train")
+        bertModel.store_embeddings_only(test_dataset, f"imdb_test_{bertModel.model_name.split('/')[-1]}")
+        bertModel.store_embeddings_only(train_dataset, f"imdb_train_{bertModel.model_name.split('/')[-1]}")
