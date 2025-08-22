@@ -119,6 +119,7 @@ class GenericEncoderModel:
             weight_decay=0.01,
             load_best_model_at_end=True,
             metric_for_best_model=metric_name,
+            seed=42,
             #push_to_hub=True,
         )
         trainer = Trainer(
