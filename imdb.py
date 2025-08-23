@@ -159,11 +159,16 @@ class GenericEncoderModel:
         logits = np.concatenate(all_logits)
         labels = np.concatenate(all_labels)
 
-        np.savez(f"logits_{self.model_name}_{dataset_name}.npz", logits=logits, labels=labels)
+        # Improved filename to be more descriptive
+        model_name_clean = self.model_name.replace('/', '_')
+        output_file = f"logits_{model_name_clean}_{dataset_name}.npz"
+        np.savez(output_file, logits=logits, labels=labels)
         
         end_time = time.time()
         wall_time = end_time - start_time
         self.timing_log[f'logits_storage_{dataset_name}'] = wall_time
+        print(f"Logits saved to {output_file}")
+        print(f"Logits shape: {logits.shape}")
         print(f"Logits storage completed in {wall_time:.2f} seconds")
 
     def store_predictions(self, dataset, predictions, output_csv_path):
@@ -360,6 +365,17 @@ for countDataset in range(0, len(datasets)):
         # Evaluation
         print(bertModel.evaluate(test_dataset, dataset_name=datasetsNames[countDataset]))
         
+        print(f"\n{'='*40}")
+        print("EXTRACTING LOGITS")
+        print(f"{'='*40}")
+        
+        bertModel.store_logits(test_dataset, f"test_{datasetsNames[countDataset]}")
+        
+        bertModel.store_logits(train_dataset, f"train_{datasetsNames[countDataset]}")
+        
+        print("Logits extraction completed!")
+        print(f"{'='*40}")
+        
         # Store embeddings (important for thesis analysis)
         bertModel.store_embeddings_only(test_dataset, f"imdb_test_{bertModel.model_name.split('/')[-1]}")
         bertModel.store_embeddings_only(train_dataset, f"imdb_train_{bertModel.model_name.split('/')[-1]}")
@@ -408,3 +424,20 @@ with open('experiment_timing_results.csv', 'w', newline='') as file:
     writer.writerow(['total_experiment', overall_time, overall_time/60, overall_time/3600])
 
 print("Timing results saved to 'experiment_timing_results.csv'")
+
+# Print summary of files generated
+print(f"\n{'='*60}")
+print("FILES GENERATED SUMMARY")
+print(f"{'='*60}")
+model_names = ['google_electra-base-discriminator', 'roberta-base', 'google-bert_bert-base-uncased']
+for model_name in model_names:
+    print(f"\n{model_name}:")
+    print(f"  - logits_{model_name}_test_imdb.npz")
+    print(f"  - logits_{model_name}_train_imdb.npz") 
+    print(f"  - embeddings_{model_name}_imdb_test_{model_name.split('_')[-1]}.npz")
+    print(f"  - embeddings_{model_name}_imdb_train_{model_name.split('_')[-1]}.npz")
+    print(f"  - detailed_timing_{model_name}_imdb.csv")
+
+print(f"\nGeneral files:")
+print(f"  - experiment_timing_results.csv")
+print(f"{'='*60}")
