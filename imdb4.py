@@ -79,8 +79,8 @@ for cfg in models_config:
     test_ds.set_format("torch")
 
     args = TrainingArguments(
-        output_dir=f"{cfg['name'].replace('/', '_')}_imdb",
-        evaluation_strategy="epoch",
+        output_dir=f"{cfg['name'].replace('/', '_')}_imdb_22",
+        eval_strategy="epoch",
         save_strategy="epoch",
         learning_rate=2e-5,
         per_device_train_batch_size=batch_size,
