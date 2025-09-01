@@ -44,12 +44,12 @@ def store_logits_embeddings(model, dataset, tokenizer, prefix):
 
     dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
     for batch in dataloader:
-        batch = {k: v.to(device) for k, v in batch.items() if k in ["input_ids", "attention_mask", "labels"]}
+        batch = {k: v.to(device) for k, v in batch.items() if k in ["input_ids", "attention_mask", "label"]}
         with torch.no_grad():
             outputs = model(**batch, output_hidden_states=True)
             logits = outputs.logits.cpu().numpy()
             embeddings = outputs.hidden_states[-1][:, 0, :].cpu().numpy()  # CLS token
-            labels = batch["labels"].cpu().numpy()
+            labels = batch["label"].cpu().numpy()
 
         all_logits.append(logits)
         all_embeddings.append(embeddings)
