@@ -1,0 +1,8 @@
+operation,time_seconds,time_minutes
+training_time,21748.224394083023,362.4704065680504
+evaluation_time,208.31711840629578,3.471951973438263
+logits_storage_test_yelp,43.57744908332825,0.7262908180554708
+logits_storage_train_yelp,564.8761856555939,9.414603094259897
+embeddings_storage_yelp_test_electra-base-discriminator,46.94841980934143,0.7824736634890238
+embeddings_storage_yelp_train_electra-base-discriminator,611.7680311203003,10.196133852005005
+model_total_time,23709.128173589706,395.1521362264951

@@ -1,0 +1,8 @@
+operation,time_seconds,time_minutes
+training_time,17881.77844142914,298.0296406904856
+evaluation_time,49.73706293106079,0.8289510488510132
+logits_storage_test_snli,8.633631706237793,0.14389386177062988
+logits_storage_train_snli,485.15703225135803,8.085950537522633
+embeddings_storage_snli_test_electra-base-discriminator,9.327984809875488,0.1554664134979248
+embeddings_storage_snli_train_electra-base-discriminator,524.3701169490814,8.739501949151357
+model_total_time,19081.634418964386,318.0272403160731

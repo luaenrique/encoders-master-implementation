@@ -1,0 +1,8 @@
+operation,time_seconds,time_minutes
+training_time,4070.3454682826996,67.83909113804499
+evaluation_time,53.47407674789429,0.8912346124649048
+logits_storage_test_agnews,6.535043001174927,0.10891738335291544
+logits_storage_train_agnews,103.61366510391235,1.7268944183985393
+embeddings_storage_agnews_test_electra-base-discriminator,7.096874952316284,0.1182812492052714
+embeddings_storage_agnews_train_electra-base-discriminator,112.02814745903015,1.8671357909838358
+model_total_time,4387.637085199356,73.1272847533226
