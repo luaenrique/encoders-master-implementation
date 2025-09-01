@@ -1,0 +1,8 @@
+operation,time_seconds,time_minutes
+training_time,2083.635614156723,34.72726023594539
+evaluation_time,236.70969676971436,3.9451616128285725
+logits_storage_test_imdb,101.43627738952637,1.6906046231587728
+logits_storage_train_imdb,101.47633266448975,1.691272211074829
+embeddings_storage_imdb_test_electra-base-discriminator,103.16969466209412,1.719494911034902
+embeddings_storage_imdb_train_electra-base-discriminator,103.24870705604553,1.7208117842674255
+model_total_time,2796.0632877349854,46.60105479558309
