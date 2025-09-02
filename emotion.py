@@ -22,12 +22,18 @@ import torch
 import numpy as np
 import evaluate
 import csv
+import time  # Added for wall time tracking
+from datetime import datetime  # Added for timestamps
 
 from transformers import TrainingArguments, Trainer
 from datasets import load_dataset
 
 batch_size = 8
 metric_name = "accuracy"
+
+RANDOM_SEED = 42
+np.random.seed(RANDOM_SEED)
+torch.manual_seed(RANDOM_SEED)
 
 class GenericEncoderModel:
     def __init__(self, model_name, training_file_name, model_type, problem_type, num_labels):
@@ -101,6 +107,8 @@ class GenericEncoderModel:
         return outputs
 
     def train(self, train_dataset, test_dataset, dataset_name):
+        train_start_time = time.time()
+        
         self.model.resize_token_embeddings(len(self._load_tokenizer()))
 
         args = TrainingArguments(
@@ -114,6 +122,7 @@ class GenericEncoderModel:
             weight_decay=0.01,
             load_best_model_at_end=True,
             metric_for_best_model=metric_name,
+            seed=42
         )
         trainer = Trainer(
             self.model,
@@ -125,6 +134,10 @@ class GenericEncoderModel:
         )
         trainer.train()
         self.trainer = trainer
+        
+        train_end_time = time.time()
+        train_wall_time = train_end_time - train_start_time
+        print(f"Training completed in {train_wall_time:.2f} seconds ({train_wall_time/60:.2f} minutes)")
 
     def store_logits(self, dataset, dataset_name):
         self.model.eval()
@@ -259,6 +272,10 @@ datasetStructure = {
     }
 }
 
+# Track overall execution time
+overall_start_time = time.time()
+print(f"Starting emotion experiment...")
+
 # Loop principal para treinar os modelos
 for countDataset in range(0, len(datasets)):
     
@@ -287,6 +304,7 @@ for countDataset in range(0, len(datasets)):
     ]
     
     for bertModel in models:
+        model_start_time = time.time()
         print(f"\n{'='*50}")
         print(f"Treinando modelo: {bertModel.model_name}")
         print(f"Dataset: {datasetsNames[countDataset]}")
@@ -349,8 +367,15 @@ for countDataset in range(0, len(datasets)):
         bertModel.store_logits(validation_dataset, f"emotion_val_{bertModel.model_name.split('/')[-1]}")
         bertModel.store_embeddings_only(validation_dataset, f"emotion_val_{bertModel.model_name.split('/')[-1]}")
         
-        print(f"Modelo {bertModel.model_name} concluído!")
+        model_end_time = time.time()
+        model_total_time = model_end_time - model_start_time
+        print(f"Modelo {bertModel.model_name} concluído em {model_total_time:.2f} segundos!")
+
+# Overall timing summary
+overall_end_time = time.time()
+overall_time = overall_end_time - overall_start_time
 
 print("\n" + "="*50)
 print("EXPERIMENTO CONCLUÍDO!")
+print(f"Tempo total: {overall_time:.2f} segundos ({overall_time/60:.2f} minutos)")
 print("="*50)
