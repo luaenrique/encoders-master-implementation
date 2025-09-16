@@ -286,8 +286,8 @@ val_split = banking_dataset['train'].select(val_idx)
 
 # Criando um novo dataset com train, validation e test
 banking_dataset_with_val = DatasetDict({
-    'train': train_split['train'],
-    'validation': val_split['test'],
+    'train': train_split,
+    'validation': val_split,
     'test': banking_dataset['test']
 })
 
