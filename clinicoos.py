@@ -165,8 +165,8 @@ class GenericEncoderModel:
         """
         with open(output_csv_path, mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(['prediction', 'intent', 'text']) 
-            for text, label, prediction in zip(dataset['text'], dataset['intent'], predictions):
+            writer.writerow(['prediction', 'label', 'text']) 
+            for text, label, prediction in zip(dataset['text'], dataset['label'], predictions):
                 writer.writerow([prediction, label, text])
 
     def evaluate(self, test_dataset, dataset_name):
@@ -249,7 +249,7 @@ print(clincoos_dataset)
 # Verificando as labels do dataset
 print("\nPrimeiros exemplos do dataset:")
 print("Texto:", clincoos_dataset['train']['text'][:3])
-print("Labels:", clincoos_dataset['train']['intent'][:3])
+print("Labels:", clincoos_dataset['train']['label'][:3])
 
 # Configuração dos datasets
 datasets = [clincoos_dataset]
@@ -263,7 +263,7 @@ def preprocess_function(examples, tokenizer, contentKey):
 datasetStructure = {
     0: {
         'contentKey': 'text',
-        'labelKey': 'intent'
+        'labelKey': 'label'
     }
 }
 
@@ -313,14 +313,18 @@ for countDataset in range(0, len(datasets)):
             lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), 
             batched=True
         )
+        train_dataset = train_dataset.rename_column('intent', 'label')
+
         validation_dataset = dataset['validation'].map(
             lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), 
             batched=True
         )
+        validation_dataset = validation_dataset.rename_column('intent', 'label')
         test_dataset = dataset['test'].map(
             lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), 
             batched=True
         )
+        test_dataset = test_dataset.rename_column('intent', 'label')
         
         # Removendo colunas desnecessárias do dataset de treino
         train_dataset = train_dataset.remove_columns([structure['contentKey']])
