@@ -115,8 +115,8 @@ class GenericEncoderModel:
         args = TrainingArguments(
             f"{self.training_file_name}_{dataset_name}_2",
             eval_strategy = "epoch",
-            save_strategy="epoch", 
-            save_total_limit=1,  
+            save_strategy = "epoch",
+            save_total_limit=1,
             learning_rate=2e-5,
             per_device_train_batch_size=batch_size,
             per_device_eval_batch_size=batch_size,
@@ -124,7 +124,7 @@ class GenericEncoderModel:
             weight_decay=0.01,
             load_best_model_at_end=True,
             metric_for_best_model=metric_name,
-            seed=42,
+            seed=42
         )
         trainer = Trainer(
             self.model,
@@ -183,7 +183,7 @@ class GenericEncoderModel:
             predictions.extend(predicted_class.cpu().numpy())
 
         # Store predictions in CSV file
-        # self.store_predictions(self.trainer.eval_dataset, predictions, output_csv_path=f"predictions_{self.model_name}_{dataset_name}_2.csv")
+        self.store_predictions(self.trainer.eval_dataset, predictions, output_csv_path=f"predictions_{self.model_name}_{dataset_name}_2.csv")
 
         # Write metrics to CSV file
         with open(output_csv_path, mode='a', newline='') as file:
@@ -240,13 +240,11 @@ class GenericEncoderModel:
         print(f"Embeddings shape: {embeddings.shape}")
 
 
-# ========== CONFIGURAÇÃO PARA O DATASET DE BANKING =========
+# ========== CONFIGURAÇÃO PARA O DATASET DE amazonpolarity =========
 def preprocess_function(examples, tokenizer, contentKey):
-    # Combinar title e content com um separador
-    combined_text = [f"{title} [SEP] {content}" for title, content in zip(examples['title'], examples['content'])]
-    return tokenizer(combined_text, truncation=True, padding="max_length", max_length=256)  # Aumentar max_length
+    return tokenizer(examples[contentKey], truncation=True, padding="max_length", max_length=128)
 
-# Estrutura do dataset de emoções
+# Estrutura do dataset de amazonpolarity
 datasetStructure = {
     0: {
         'contentKey': 'text',
@@ -256,10 +254,10 @@ datasetStructure = {
 
 # Track overall execution time
 overall_start_time = time.time()
-print(f"Starting amazonpolarity experiment...")
-amazon_dataset = load_dataset("fancyzhx/amazon_polarity")
+print(f"Starting amazon_polarity experiment...")
+amazon_dataset = load_dataset("mteb/amazon_polarity")
 
-print("Dataset Amazon Polarity carregado:")
+print("Dataset amazon_polarity carregado:")
 print(amazon_dataset)
 print(f"Splits disponíveis: {list(amazon_dataset.keys())}")
 
@@ -306,12 +304,12 @@ print(f"\nDistribuição de classes no treino: {np.bincount(amazon_dataset_with_
 print(f"Distribuição de classes na validação: {np.bincount(amazon_dataset_with_val['validation']['label'])}")
 
 # Número de classes únicas
-num_unique_labels = len(set(amazon_dataset['train']['label']))
+num_unique_labels = len(set(amazon_dataset_with_val['train']['label']))
 print(f"Número de classes: {num_unique_labels}")
 
 # Configuração dos datasets (CORRIGIDO)
-datasets = [amazon_dataset]  # Usar o dataset com validação
-datasetsNames = ['amazon_polarity']
+datasets = [amazon_dataset_with_val]  # Usar o dataset com validação
+datasetsNames = ['amazonpolarity']
 numLabels = [num_unique_labels]  # Usar o número real de classes
 
 # O resto do código permanece igual, mas agora funcionará corretamente
@@ -366,7 +364,7 @@ for countDataset in range(0, len(datasets)):
         )
 
         # Removendo colunas desnecessárias do dataset de treino
-        train_dataset = train_dataset.remove_columns(['title', 'content'])
+        train_dataset = train_dataset.remove_columns([structure['contentKey']])
         
         # Verificando exemplo processado
         example = train_dataset[0]
