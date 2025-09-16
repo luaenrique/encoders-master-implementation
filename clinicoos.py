@@ -249,7 +249,7 @@ print(clincoos_dataset)
 # Verificando as labels do dataset
 print("\nPrimeiros exemplos do dataset:")
 print("Texto:", clincoos_dataset['train']['text'][:3])
-print("Labels:", clincoos_dataset['train']['label'][:3])
+print("Labels:", clincoos_dataset['train']['intent'][:3])
 
 # Configuração dos datasets
 datasets = [clincoos_dataset]
