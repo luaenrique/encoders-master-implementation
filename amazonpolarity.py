@@ -183,7 +183,7 @@ class GenericEncoderModel:
             predictions.extend(predicted_class.cpu().numpy())
 
         # Store predictions in CSV file
-        self.store_predictions(self.trainer.eval_dataset, predictions, output_csv_path=f"predictions_{self.model_name}_{dataset_name}_2.csv")
+        # self.store_predictions(self.trainer.eval_dataset, predictions, output_csv_path=f"predictions_{self.model_name}_{dataset_name}_2.csv")
 
         # Write metrics to CSV file
         with open(output_csv_path, mode='a', newline='') as file:
