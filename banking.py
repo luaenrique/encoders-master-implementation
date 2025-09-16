@@ -24,6 +24,7 @@ import evaluate
 import csv
 import time  # Added for wall time tracking
 from datetime import datetime  # Added for timestamps
+from sklearn.model_selection import train_test_split
 
 from transformers import TrainingArguments, Trainer
 from datasets import load_dataset
@@ -268,14 +269,28 @@ print("Labels:", banking_dataset['train']['label'][:3])
 from datasets import DatasetDict
 
 # Dividindo o dataset de treino
-train_val_split = banking_dataset['train'].train_test_split(test_size=0.2, seed=42, stratify_by_column='label')
+train_indices = list(range(len(banking_dataset['train'])))
+train_labels = banking_dataset['train']['label']
+
+# Dividir os índices mantendo estratificação
+train_idx, val_idx = train_test_split(
+    train_indices, 
+    test_size=0.2, 
+    random_state=42, 
+    stratify=train_labels
+)
+
+# Criar os novos datasets
+train_split = banking_dataset['train'].select(train_idx)
+val_split = banking_dataset['train'].select(val_idx)
 
 # Criando um novo dataset com train, validation e test
 banking_dataset_with_val = DatasetDict({
-    'train': train_val_split['train'],
-    'validation': train_val_split['test'],  # O 'test' do split é nossa validação
+    'train': train_split['train'],
+    'validation': val_split['test'],
     'test': banking_dataset['test']
 })
+
 
 print(f"\nNovo dataset com validação:")
 print(f"Train: {len(banking_dataset_with_val['train'])} exemplos")
