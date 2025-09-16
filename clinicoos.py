@@ -241,7 +241,7 @@ class GenericEncoderModel:
 # ========== CONFIGURAÇÃO PARA O DATASET DE EMOÇÕES ==========
 
 # Carregando o dataset de emoções
-clincoos_dataset = load_dataset("clinc/clinc_oos", "split")
+clincoos_dataset = load_dataset("clinc/clinc_oos", "imbalanced")
 
 print("Dataset de emoções carregado:")
 print(clincoos_dataset)
