@@ -238,29 +238,7 @@ class GenericEncoderModel:
         print(f"Embeddings shape: {embeddings.shape}")
 
 
-# ========== CONFIGURAÇÃO PARA O DATASET DE EMOÇÕES ==========
-
-# Carregando o dataset de emoções
-banking_dataset = load_dataset("mteb/banking77")
-
-print("Dataset de emoções carregado:")
-print(banking_dataset)
-
-# Verificando as labels do dataset
-print("\nPrimeiros exemplos do dataset:")
-print("Texto:", banking_dataset['train']['text'][:3])
-print("Labels:", banking_dataset['train']['label'][:3])
-
-# Mapeamento das labels (0: sadness, 1: joy, 2: love, 3: anger, 4: fear, 5: surprise)
-label_names = ['sadness', 'joy', 'love', 'anger', 'fear', 'surprise']
-print(f"\nLabels do dataset: {label_names}")
-print(f"Número de classes: {len(label_names)}")
-
-# Configuração dos datasets
-datasets = [banking_dataset]
-datasetsNames = ['banking77']
-numLabels = [6]  # 6 classes de emoção
-
+# ========== CONFIGURAÇÃO PARA O DATASET DE BANKING =========
 def preprocess_function(examples, tokenizer, contentKey):
     return tokenizer(examples[contentKey], truncation=True, padding="max_length", max_length=128)
 
@@ -275,8 +253,50 @@ datasetStructure = {
 # Track overall execution time
 overall_start_time = time.time()
 print(f"Starting banking77 experiment...")
+banking_dataset = load_dataset("mteb/banking77")
 
-# Loop principal para treinar os modelos
+print("Dataset Banking77 carregado:")
+print(banking_dataset)
+print(f"Splits disponíveis: {list(banking_dataset.keys())}")
+
+# Verificando as labels do dataset
+print("\nPrimeiros exemplos do dataset:")
+print("Texto:", banking_dataset['train']['text'][:3])
+print("Labels:", banking_dataset['train']['label'][:3])
+
+# OPÇÃO 1: Dividir o conjunto de treino em treino + validação (80/20)
+from datasets import DatasetDict
+
+# Dividindo o dataset de treino
+train_val_split = banking_dataset['train'].train_test_split(test_size=0.2, seed=42, stratify_by_column='label')
+
+# Criando um novo dataset com train, validation e test
+banking_dataset_with_val = DatasetDict({
+    'train': train_val_split['train'],
+    'validation': train_val_split['test'],  # O 'test' do split é nossa validação
+    'test': banking_dataset['test']
+})
+
+print(f"\nNovo dataset com validação:")
+print(f"Train: {len(banking_dataset_with_val['train'])} exemplos")
+print(f"Validation: {len(banking_dataset_with_val['validation'])} exemplos") 
+print(f"Test: {len(banking_dataset_with_val['test'])} exemplos")
+
+# Verificar distribuição das classes
+import numpy as np
+print(f"\nDistribuição de classes no treino: {np.bincount(banking_dataset_with_val['train']['label'])}")
+print(f"Distribuição de classes na validação: {np.bincount(banking_dataset_with_val['validation']['label'])}")
+
+# Número de classes únicas
+num_unique_labels = len(set(banking_dataset['train']['label']))
+print(f"Número de classes: {num_unique_labels}")
+
+# Configuração dos datasets (CORRIGIDO)
+datasets = [banking_dataset_with_val]  # Usar o dataset com validação
+datasetsNames = ['banking77']
+numLabels = [num_unique_labels]  # Usar o número real de classes
+
+# O resto do código permanece igual, mas agora funcionará corretamente
 for countDataset in range(0, len(datasets)):
     
     models = [
@@ -313,12 +333,12 @@ for countDataset in range(0, len(datasets)):
         dataset = datasets[countDataset]
         structure = datasetStructure.get(countDataset, None)
 
-        # Preparando os datasets
+        # Preparando os datasets (agora com validação real)
         train_dataset = dataset['train'].map(
             lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), 
             batched=True
         )
-        validation_dataset = dataset['validation'].map(
+        validation_dataset = dataset['validation'].map(  # Agora existe!
             lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), 
             batched=True
         )
@@ -326,7 +346,7 @@ for countDataset in range(0, len(datasets)):
             lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), 
             batched=True
         )
-        
+
         # Removendo colunas desnecessárias do dataset de treino
         train_dataset = train_dataset.remove_columns([structure['contentKey']])
         
