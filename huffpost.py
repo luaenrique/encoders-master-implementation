@@ -229,7 +229,7 @@ huffpost_dataset = load_dataset("heegyu/news-category-dataset")
 print("Dataset HuffPost carregado:")
 print(huffpost_dataset)
 
-full_dataset = huffpost_dataset['test']
+full_dataset = huffpost_dataset['train']
 
 unique_categories = sorted(list(set(full_dataset['category'])))
 category_to_id = {cat: idx for idx, cat in enumerate(unique_categories)}
