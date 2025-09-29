@@ -21,8 +21,8 @@ import torch
 import numpy as np
 import evaluate
 import csv
-import time  # Added for wall time tracking
-from datetime import datetime  # Added for timestamps
+import time
+from datetime import datetime
 
 from transformers import TrainingArguments, Trainer
 from datasets import load_dataset
@@ -71,13 +71,11 @@ class GenericEncoderModel:
     def compute_metrics(self, eval_preds, threshold = 0.5):
         logits, labels = eval_preds
         if self.problem_type == "single_label_classification" :
-            # single label classification
             ptype = None
             predictions = np.argmax(logits, axis=-1).reshape(-1,1)
             labels_ = labels
             metrics = ["accuracy", "micro-f1", "macro-f1"]
         elif self.problem_type ==  "multi_label_classification":
-            # multi label classification
             ptype = "multilabel"
             sigmoid = torch.nn.Sigmoid()
             probs = sigmoid(torch.Tensor(logits))
@@ -89,7 +87,6 @@ class GenericEncoderModel:
         else:
             raise ValueError("Wrong problem type")
         
-        # Compute the output
         outputs = dict()
         if "accuracy" in metrics:
             metric = evaluate.load("accuracy")
@@ -159,14 +156,11 @@ class GenericEncoderModel:
         np.savez(f"logits_{self.model_name}_{dataset_name}.npz", logits=logits, labels=labels)
 
     def store_predictions(self, dataset, predictions, output_csv_path):
-        """
-        Store predictions along with true labels to a CSV file.
-        """
         with open(output_csv_path, mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(['prediction', 'label', 'text']) 
-            for text, label, prediction in zip(dataset['text'], dataset['label'], predictions):
-                writer.writerow([prediction, label, text])
+            writer.writerow(['prediction', 'label', 'headline', 'short_description']) 
+            for headline, description, label, prediction in zip(dataset['headline'], dataset['short_description'], dataset['label'], predictions):
+                writer.writerow([prediction, label, headline, description])
 
     def evaluate(self, test_dataset, dataset_name):
         metrics = self.trainer.evaluate()
@@ -179,10 +173,8 @@ class GenericEncoderModel:
             predicted_class = torch.argmax(logits, dim=-1)
             predictions.extend(predicted_class.cpu().numpy())
 
-        # Store predictions in CSV file
         self.store_predictions(self.trainer.eval_dataset, predictions, output_csv_path=f"predictions_{self.model_name}_{dataset_name}_2.csv")
 
-        # Write metrics to CSV file
         with open(output_csv_path, mode='a', newline='') as file:
             writer = csv.writer(file)
             file_is_empty = file.tell() == 0
@@ -195,9 +187,6 @@ class GenericEncoderModel:
         return metrics
 
     def store_embeddings_only(self, dataset, dataset_name):
-        """
-        Store only embeddings (lighter version if you don't need logits).
-        """
         self.model.eval()
         all_embeddings = []
         all_labels = []
@@ -208,15 +197,11 @@ class GenericEncoderModel:
             with torch.no_grad():
                 outputs = self.model(**batch, output_hidden_states=True)
                 
-                # Get embeddings from the last hidden state
                 last_hidden_states = outputs.hidden_states[-1]
                 
-                # Extract embeddings based on model type
                 if self.model_type in ['bert', 'electra', 'roberta', 'longformer']:
-                    # Use [CLS] token (first token)
                     embeddings = last_hidden_states[:, 0, :].cpu().numpy()
                 else:
-                    # Mean pooling
                     attention_mask = batch['attention_mask'].unsqueeze(-1).expand(last_hidden_states.size()).float()
                     sum_embeddings = torch.sum(last_hidden_states * attention_mask, 1)
                     sum_mask = torch.clamp(attention_mask.sum(1), min=1e-9)
@@ -236,6 +221,9 @@ class GenericEncoderModel:
         print(f"Saved embeddings to {output_file}")
         print(f"Embeddings shape: {embeddings.shape}")
 
+
+# ========== CARREGAR E PREPARAR DATASET ==========
+
 huffpost_dataset = load_dataset("khalidalt/HuffPost")
 
 print("Dataset HuffPost carregado:")
@@ -243,6 +231,31 @@ print(huffpost_dataset)
 
 full_dataset = huffpost_dataset['test']
 
+unique_categories = sorted(list(set(full_dataset['category'])))
+category_to_id = {cat: idx for idx, cat in enumerate(unique_categories)}
+id_to_category = {idx: cat for cat, idx in category_to_id.items()}
+
+print(f"\n{'='*60}")
+print(f"Mapeamento de categorias:")
+print(f"{'='*60}")
+for cat, idx in sorted(category_to_id.items(), key=lambda x: x[1]):
+    print(f"{idx:2d}: {cat}")
+print(f"{'='*60}")
+
+# Salvar mapeamento para referência futura
+import json
+with open('category_mapping.json', 'w') as f:
+    json.dump({'category_to_id': category_to_id, 'id_to_category': id_to_category}, f, indent=2)
+print("Mapeamento salvo em 'category_mapping.json'")
+
+# Adicionar coluna 'label' com IDs numéricos
+def map_category_to_id(example):
+    example['label'] = category_to_id[example['category']]
+    return example
+
+full_dataset = full_dataset.map(map_category_to_id)
+
+# Dividir dataset com estratificação
 train_test_split = full_dataset.train_test_split(
     test_size=0.3, 
     seed=RANDOM_SEED,
@@ -259,26 +272,24 @@ test_val_split = remaining_dataset.train_test_split(
 test_dataset_raw = test_val_split['train']  
 validation_dataset_raw = test_val_split['test'] 
 
-# Criar estrutura similar ao dataset original
 huffpost_split = {
     'train': train_dataset_raw,
     'validation': validation_dataset_raw,
     'test': test_dataset_raw
 }
 
-print("\nDivisão dos dados:")
+print(f"\nDivisão dos dados:")
 print(f"Treino: {len(train_dataset_raw)} exemplos ({len(train_dataset_raw)/len(full_dataset)*100:.1f}%)")
 print(f"Validação: {len(validation_dataset_raw)} exemplos ({len(validation_dataset_raw)/len(full_dataset)*100:.1f}%)")
 print(f"Teste: {len(test_dataset_raw)} exemplos ({len(test_dataset_raw)/len(full_dataset)*100:.1f}%)")
 
-print("\nPrimeiros exemplos do dataset:")
-print("Headline:", huffpost_split['train']['headline'][:3])
-print("Labels:", huffpost_split['train']['label'][:3])
+print(f"\nPrimeiros exemplos do dataset:")
+print(f"Headline: {huffpost_split['train']['headline'][:2]}")
+print(f"Category: {huffpost_split['train']['category'][:2]}")
+print(f"Label (numeric): {huffpost_split['train']['label'][:2]}")
 
-unique_categories = set(full_dataset['label'])
 num_categories = len(unique_categories)
 print(f"\nNúmero de categorias: {num_categories}")
-print(f"Categorias: {sorted(unique_categories)}")
 
 datasets = [huffpost_split]
 datasetsNames = ['huffpost']
@@ -290,24 +301,22 @@ def preprocess_function(examples, tokenizer, headline_key='headline', descriptio
         examples[description_key], 
         truncation=True, 
         padding="max_length", 
-        max_length=128 
+        max_length=256
     )
-    
     return inputs
 
-# Estrutura do dataset HuffPost
 datasetStructure = {
     0: {
-        'contentKey': 'headline',  # Campo que contém o texto
-        'labelKey': 'label'        # Campo que contém a label
+        'contentKey': ['headline', 'short_description'],
+        'labelKey': 'label'
     }
 }
 
-# Track overall execution time
+# ========== TREINAMENTO ==========
+
 overall_start_time = time.time()
 print(f"\nStarting HuffPost experiment...")
 
-# Loop principal para treinar os modelos
 for countDataset in range(0, len(datasets)):
     
     models = [
@@ -346,26 +355,24 @@ for countDataset in range(0, len(datasets)):
 
         # Preparando os datasets
         train_dataset = dataset['train'].map(
-            lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), 
+            lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey'][0], structure['contentKey'][1]), 
             batched=True
         )
-        # Não precisa renomear - já é 'label'
+        train_dataset = train_dataset.remove_columns(['short_description', 'headline', 'category'])
 
         validation_dataset = dataset['validation'].map(
-            lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), 
+            lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey'][0], structure['contentKey'][1]), 
             batched=True
         )
-        # Não precisa renomear - já é 'label'
         
         test_dataset = dataset['test'].map(
-            lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), 
+            lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey'][0], structure['contentKey'][1]), 
             batched=True
         )
-        
-        train_dataset = train_dataset.remove_columns(['short_description', 'headline'])
         
         example = train_dataset[0]
         print(f"Chaves do exemplo processado: {example.keys()}")
+        print(f"Label: {example['label']}")
         print(f"Texto decodificado: {bertModel.tokenizer.decode(example['input_ids'])}")
 
         train_dataset.set_format("torch")
