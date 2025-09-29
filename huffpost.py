@@ -232,6 +232,7 @@ print(huffpost_dataset)
 full_dataset = huffpost_dataset['train']
 
 # Criar mapeamento de categorias para números
+print("\nCriando mapeamento de categorias...")
 unique_categories = sorted(list(set(full_dataset['category'])))
 category_to_id = {cat: idx for idx, cat in enumerate(unique_categories)}
 id_to_category = {idx: cat for cat, idx in category_to_id.items()}
@@ -249,13 +250,16 @@ with open('category_mapping.json', 'w') as f:
     json.dump({'category_to_id': category_to_id, 'id_to_category': id_to_category}, f, indent=2)
 print("Mapeamento salvo em 'category_mapping.json'")
 
-# Adicionar coluna 'label' com IDs numéricos
+# Adicionar coluna 'label' com IDs numéricos - IMPORTANTE: atribuir o resultado!
 def map_category_to_id(example):
     example['label'] = category_to_id[example['category']]
     return example
 
 print("\nMapeando categorias para IDs numéricos...")
 full_dataset = full_dataset.map(map_category_to_id)
+
+# Verificar se funcionou
+print(f"Colunas disponíveis: {full_dataset.column_names}")
 print(f"Primeiras labels: {full_dataset['label'][:5]}")
 print(f"Primeiras categorias: {full_dataset['category'][:5]}")
 
