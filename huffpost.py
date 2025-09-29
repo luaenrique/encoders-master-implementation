@@ -224,13 +224,14 @@ class GenericEncoderModel:
 
 # ========== CARREGAR E PREPARAR DATASET ==========
 
-huffpost_dataset = load_dataset("heegyu/news-category-dataset")
+huffpost_dataset = load_dataset("khalidalt/HuffPost")
 
 print("Dataset HuffPost carregado:")
 print(huffpost_dataset)
 
 full_dataset = huffpost_dataset['train']
 
+# Criar mapeamento de categorias para números
 unique_categories = sorted(list(set(full_dataset['category'])))
 category_to_id = {cat: idx for idx, cat in enumerate(unique_categories)}
 id_to_category = {idx: cat for cat, idx in category_to_id.items()}
@@ -253,13 +254,17 @@ def map_category_to_id(example):
     example['label'] = category_to_id[example['category']]
     return example
 
+print("\nMapeando categorias para IDs numéricos...")
 full_dataset = full_dataset.map(map_category_to_id)
+print(f"Primeiras labels: {full_dataset['label'][:5]}")
+print(f"Primeiras categorias: {full_dataset['category'][:5]}")
 
 # Dividir dataset com estratificação
+print("\nDividindo dataset...")
 train_test_split = full_dataset.train_test_split(
     test_size=0.3, 
     seed=RANDOM_SEED,
-    stratify_by_column='category'
+    stratify_by_column='label'
 )
 train_dataset_raw = train_test_split['train']
 remaining_dataset = train_test_split['test']
@@ -267,7 +272,7 @@ remaining_dataset = train_test_split['test']
 test_val_split = remaining_dataset.train_test_split(
     test_size=0.333, 
     seed=RANDOM_SEED,
-    stratify_by_column='category'
+    stratify_by_column='label'
 )
 test_dataset_raw = test_val_split['train']  
 validation_dataset_raw = test_val_split['test'] 
