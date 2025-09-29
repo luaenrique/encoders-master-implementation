@@ -259,7 +259,7 @@ full_dataset = full_dataset.map(map_category_to_id)
 train_test_split = full_dataset.train_test_split(
     test_size=0.3, 
     seed=RANDOM_SEED,
-    stratify_by_column='label'
+    stratify_by_column='category'
 )
 train_dataset_raw = train_test_split['train']
 remaining_dataset = train_test_split['test']
@@ -267,7 +267,7 @@ remaining_dataset = train_test_split['test']
 test_val_split = remaining_dataset.train_test_split(
     test_size=0.333, 
     seed=RANDOM_SEED,
-    stratify_by_column='label'
+    stratify_by_column='category'
 )
 test_dataset_raw = test_val_split['train']  
 validation_dataset_raw = test_val_split['test'] 
