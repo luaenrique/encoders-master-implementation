@@ -1,4 +1,3 @@
-from transformers import AutoTokenizer
 import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.optim import AdamW
@@ -231,6 +230,9 @@ print(huffpost_dataset)
 
 full_dataset = huffpost_dataset['train']
 
+# Verificar estrutura do dataset
+print(f"\nColunas disponíveis: {full_dataset.column_names}")
+
 # Criar mapeamento de categorias para números
 print("\nCriando mapeamento de categorias...")
 unique_categories = sorted(list(set(full_dataset['category'])))
@@ -250,7 +252,7 @@ with open('category_mapping.json', 'w') as f:
     json.dump({'category_to_id': category_to_id, 'id_to_category': id_to_category}, f, indent=2)
 print("Mapeamento salvo em 'category_mapping.json'")
 
-# Adicionar coluna 'label' com IDs numéricos - IMPORTANTE: atribuir o resultado!
+# Adicionar coluna 'label' com IDs numéricos
 def map_category_to_id(example):
     example['label'] = category_to_id[example['category']]
     return example
@@ -258,12 +260,14 @@ def map_category_to_id(example):
 print("\nMapeando categorias para IDs numéricos...")
 full_dataset = full_dataset.map(map_category_to_id)
 
-# Verificar se funcionou
-print(f"Colunas disponíveis: {full_dataset.column_names}")
-print(f"Primeiras labels: {full_dataset['label'][:5]}")
-print(f"Primeiras categorias: {full_dataset['category'][:5]}")
+# CRITICAL: Converter a coluna label para ClassLabel para permitir estratificação
+from datasets import ClassLabel
+full_dataset = full_dataset.cast_column('label', ClassLabel(num_classes=len(unique_categories)))
 
-# Dividir dataset com estratificação
+print(f"Tipo da coluna label: {full_dataset.features['label']}")
+print(f"Primeiras labels: {full_dataset['label'][:5]}")
+
+# Agora podemos dividir com estratificação
 print("\nDividindo dataset...")
 train_test_split = full_dataset.train_test_split(
     test_size=0.3, 
