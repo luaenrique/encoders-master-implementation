@@ -314,7 +314,7 @@ def preprocess_function(examples, tokenizer, headline_key='headline', descriptio
         examples[description_key], 
         truncation=True, 
         padding="max_length", 
-        max_length=256
+        max_length=128
     )
     return inputs
 
