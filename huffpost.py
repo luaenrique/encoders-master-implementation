@@ -224,7 +224,7 @@ class GenericEncoderModel:
 
 # ========== CARREGAR E PREPARAR DATASET ==========
 
-huffpost_dataset = load_dataset("khalidalt/HuffPost")
+huffpost_dataset = load_dataset("heegyu/news-category-dataset")
 
 print("Dataset HuffPost carregado:")
 print(huffpost_dataset)
