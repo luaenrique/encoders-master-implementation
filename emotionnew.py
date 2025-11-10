@@ -117,7 +117,8 @@ class GenericEncoderModel:
     def train(self, train_dataset, test_dataset, dataset_name):
         train_start_time = time.time()
         
-        self.model.resize_token_embeddings(len(self._load_tokenizer()))
+        # corrigido: usa o tokenizer já carregado
+        self.model.resize_token_embeddings(len(self.tokenizer))
 
         args = TrainingArguments(
             f"{self.training_file_name}_{dataset_name}_2",
@@ -146,7 +147,7 @@ class GenericEncoderModel:
         train_end_time = time.time()
         train_wall_time = train_end_time - train_start_time
         print(f"Training completed in {train_wall_time:.2f} seconds ({train_wall_time/60:.2f} minutes)")
-
+    
     def store_logits(self, dataset, dataset_name):
         self.model.eval()
         all_logits = []
@@ -169,17 +170,46 @@ class GenericEncoderModel:
 
     def store_predictions(self, dataset, predictions, output_csv_path):
         """
-        Store predictions along with true labels to a CSV file.
+        Store predictions along with true labels and text to a CSV file.
+        Works even if 'text' column was removed (will decode input_ids).
         """
         with open(output_csv_path, mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(['prediction', 'label', 'text']) 
-            for text, label, prediction in zip(dataset['text'], dataset['label'], predictions):
-                writer.writerow([prediction, label, text])
+            writer.writerow(['prediction', 'label', 'text'])
+            
+            assert len(predictions) == len(dataset), (
+                f"predictions ({len(predictions)}) != dataset ({len(dataset)})"
+            )
+
+            for i in range(len(dataset)):
+                example = dataset[i]
+                label = example.get('label', None)
+                
+                # tenta pegar o texto original
+                if 'text' in example:
+                    text = example['text']
+                else:
+                    # reconstrói texto a partir de input_ids
+                    input_ids = example.get('input_ids')
+                    if input_ids is None:
+                        text = ""
+                    else:
+                        try:
+                            ids = input_ids.tolist() if hasattr(input_ids, 'tolist') else list(input_ids)
+                        except Exception:
+                            ids = input_ids
+                        text = self.tokenizer.decode(ids, skip_special_tokens=True)
+                
+                writer.writerow([predictions[i], label, text])
+
 
     def evaluate(self, test_dataset, dataset_name):
+        """
+        Avalia o modelo e salva métricas e previsões.
+        Usa o dataset original (com texto) para salvar as previsões.
+        """
         metrics = self.trainer.evaluate()
-        output_csv_path=f"metrics_{self.model_name}_{dataset_name}_2.csv"
+        output_csv_path = f"metrics_{self.model_name}_{dataset_name}_2.csv"
 
         predictions = []
         for batch in self.trainer.get_test_dataloader(test_dataset):
@@ -188,18 +218,26 @@ class GenericEncoderModel:
             predicted_class = torch.argmax(logits, dim=-1)
             predictions.extend(predicted_class.cpu().numpy())
 
-        # Store predictions in CSV file
-        self.store_predictions(self.trainer.eval_dataset, predictions, output_csv_path=f"predictions_{self.model_name}_{dataset_name}_2.csv")
+        # Usa o dataset ORIGINAL com texto, não o da trainer
+        self.store_predictions(
+            test_dataset, 
+            predictions, 
+            output_csv_path=f"predictions_{self.model_name}_{dataset_name}_2.csv"
+        )
 
-        # Write metrics to CSV file
+        # Salva métricas
         with open(output_csv_path, mode='a', newline='') as file:
             writer = csv.writer(file)
             file_is_empty = file.tell() == 0
             if file_is_empty:
                 writer.writerow(['dataset', 'accuracy', 'micro-f1', 'macro-f1'])
 
-            writer.writerow([self.training_file_name, metrics.get('eval_accuracy', 'N/A'),
-                             metrics.get('eval_micro-f1', 'N/A'), metrics.get('eval_macro-f1', 'N/A')])
+            writer.writerow([
+                self.training_file_name,
+                metrics.get('eval_accuracy', 'N/A'),
+                metrics.get('eval_micro-f1', 'N/A'),
+                metrics.get('eval_macro-f1', 'N/A')
+            ])
 
         return metrics
 
@@ -247,13 +285,8 @@ class GenericEncoderModel:
 
     def store_sentence_based_embeddings(self, dataset, dataset_name, text_field='text'):
         """
-        NOVA FUNÇÃO: Quebra textos em sentenças, gera embeddings para cada sentença
-        e calcula a média para representar o documento completo.
-        
-        Args:
-            dataset: Dataset contendo os textos
-            dataset_name: Nome para salvar o arquivo
-            text_field: Nome do campo que contém o texto original
+        Gera embeddings médios de sentenças por documento.
+        Corrigido fallback em caso de textos vazios.
         """
         print(f"\n{'='*60}")
         print(f"Gerando embeddings baseados em sentenças para {dataset_name}")
@@ -266,27 +299,19 @@ class GenericEncoderModel:
         all_labels = []
         all_sentence_counts = []
         
-        # Processar cada documento
         for idx, example in enumerate(dataset):
             if idx % 100 == 0:
                 print(f"Processando documento {idx}/{len(dataset)}...")
-            
-            # Obter texto original e label
+
             text = example[text_field]
             label = example['label']
             
-            # Quebrar texto em sentenças
             sentences = sent_tokenize(text)
-            
-            # Se não houver sentenças válidas, usar o texto completo
             if len(sentences) == 0:
                 sentences = [text]
             
             sentence_embeddings = []
-            
-            # Processar cada sentença
             for sentence in sentences:
-                # Tokenizar sentença
                 inputs = self.tokenizer(
                     sentence,
                     truncation=True,
@@ -294,20 +319,15 @@ class GenericEncoderModel:
                     max_length=128,
                     return_tensors='pt'
                 )
-                
-                # Mover para o dispositivo correto
                 inputs = {k: v.to(device) for k, v in inputs.items()}
                 
-                # Gerar embedding
                 with torch.no_grad():
                     outputs = self.model(**inputs, output_hidden_states=True)
                     last_hidden_states = outputs.hidden_states[-1]
                     
-                    # Extrair embedding da sentença (usando [CLS] token)
                     if self.model_type in ['bert', 'electra', 'roberta', 'longformer']:
                         sentence_emb = last_hidden_states[:, 0, :].cpu().numpy()
                     else:
-                        # Mean pooling
                         attention_mask = inputs['attention_mask'].unsqueeze(-1).expand(last_hidden_states.size()).float()
                         sum_embeddings = torch.sum(last_hidden_states * attention_mask, 1)
                         sum_mask = torch.clamp(attention_mask.sum(1), min=1e-9)
@@ -315,23 +335,21 @@ class GenericEncoderModel:
                     
                     sentence_embeddings.append(sentence_emb[0])
             
-            # Calcular média dos embeddings das sentenças
             if len(sentence_embeddings) > 0:
                 doc_embedding = np.mean(sentence_embeddings, axis=0)
             else:
-                # Fallback: usar embedding zero se não houver sentenças
-                doc_embedding = np.zeros(sentence_embeddings[0].shape)
+                # Corrigido: cria vetor zero com base no tamanho do modelo
+                hidden_size = self.model.config.hidden_size
+                doc_embedding = np.zeros(hidden_size)
             
             all_doc_embeddings.append(doc_embedding)
             all_labels.append(label)
             all_sentence_counts.append(len(sentences))
         
-        # Converter para arrays numpy
         embeddings = np.array(all_doc_embeddings)
         labels = np.array(all_labels)
         sentence_counts = np.array(all_sentence_counts)
         
-        # Salvar embeddings
         output_file = f"sentence_embeddings_{self.model_name.replace('/', '_')}_{dataset_name}.npz"
         np.savez_compressed(
             output_file,
