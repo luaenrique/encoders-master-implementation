@@ -286,8 +286,17 @@ class GenericEncoderModel:
     def store_sentence_based_embeddings(self, dataset, dataset_name, text_field='text'):
         """
         Gera embeddings médios de sentenças por documento.
-        Corrigido fallback em caso de textos vazios.
+        Protegido contra textos vazios ou None.
         """
+        import nltk
+        from nltk.tokenize import sent_tokenize
+
+        # Garantir que o recurso do NLTK esteja disponível
+        try:
+            nltk.data.find('tokenizers/punkt')
+        except LookupError:
+            nltk.download('punkt')
+
         print(f"\n{'='*60}")
         print(f"Gerando embeddings baseados em sentenças para {dataset_name}")
         print(f"{'='*60}")
@@ -303,13 +312,15 @@ class GenericEncoderModel:
             if idx % 100 == 0:
                 print(f"Processando documento {idx}/{len(dataset)}...")
 
-            text = example[text_field]
-            label = example['label']
-            
+            text = example.get(text_field, "")
+            if not text:
+                text = " "  # fallback para texto vazio
+
+            label = example.get('label', 0)
             sentences = sent_tokenize(text)
             if len(sentences) == 0:
                 sentences = [text]
-            
+
             sentence_embeddings = []
             for sentence in sentences:
                 inputs = self.tokenizer(
@@ -335,12 +346,7 @@ class GenericEncoderModel:
                     
                     sentence_embeddings.append(sentence_emb[0])
             
-            if len(sentence_embeddings) > 0:
-                doc_embedding = np.mean(sentence_embeddings, axis=0)
-            else:
-                # Corrigido: cria vetor zero com base no tamanho do modelo
-                hidden_size = self.model.config.hidden_size
-                doc_embedding = np.zeros(hidden_size)
+            doc_embedding = np.mean(sentence_embeddings, axis=0) if sentence_embeddings else np.zeros(self.model.config.hidden_size)
             
             all_doc_embeddings.append(doc_embedding)
             all_labels.append(label)
