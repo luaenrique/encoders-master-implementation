@@ -24,17 +24,42 @@ import evaluate
 import csv
 import time
 from datetime import datetime
+
 import nltk
 from nltk.tokenize import sent_tokenize
 
 from transformers import TrainingArguments, Trainer
 from datasets import load_dataset
 
-# Download do recurso necessário do NLTK para segmentação de sentenças
+print("="*60)
+print("CONFIGURANDO NLTK...")
+print("="*60)
+
+# Lista de recursos necessários
+required_resources = [
+    'punkt_tab',  # Novo formato (NLTK 3.9+)
+    'punkt',      # Formato antigo (fallback)
+]
+
+for resource in required_resources:
+    try:
+        nltk.data.find(f'tokenizers/{resource}')
+        print(f"✓ Recurso '{resource}' já disponível")
+    except LookupError:
+        print(f"✗ Baixando '{resource}'...")
+        nltk.download(resource, quiet=False)
+        print(f"✓ '{resource}' baixado!")
+
 try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
+    test_sentences = sent_tokenize("Test sentence. Another one.")
+    print(f"✓ sent_tokenize funcionando! ({len(test_sentences)} sentenças)")
+except Exception as e:
+    print(f"✗ ERRO: {e}")
+    print("Forçando download completo...")
     nltk.download('punkt')
+    nltk.download('punkt_tab')
+
+
 
 batch_size = 8
 metric_name = "accuracy"
@@ -291,11 +316,6 @@ class GenericEncoderModel:
         import nltk
         from nltk.tokenize import sent_tokenize
 
-        # Garantir que o recurso do NLTK esteja disponível
-        try:
-            nltk.data.find('tokenizers/punkt')
-        except LookupError:
-            nltk.download('punkt')
 
         print(f"\n{'='*60}")
         print(f"Gerando embeddings baseados em sentenças para {dataset_name}")
