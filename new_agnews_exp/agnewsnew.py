@@ -451,6 +451,10 @@ for countDataset in range(0, len(datasets)):
         train_dataset = dataset['train'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
         test_dataset = dataset['test'].map(lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey']), batched=True)
         
+        # KEEP REFERENCES TO ORIGINAL DATASETS BEFORE REMOVING TEXT COLUMN
+        train_dataset_with_text = train_dataset
+        test_dataset_with_text = test_dataset
+        
         train_dataset_processed = train_dataset.remove_columns([structure['contentKey']])
         test_dataset_processed = test_dataset.remove_columns([structure['contentKey']])
         
@@ -494,14 +498,14 @@ for countDataset in range(0, len(datasets)):
         print("SALVANDO EMBEDDINGS BASEADOS EM SENTENÇAS (média de sentenças)")
         print("="*60)
         
-        # Precisamos usar os datasets originais que ainda contém o campo 'text'
+        # USE THE DATASETS THAT STILL HAVE THE 'text' COLUMN
         bertModel.store_sentence_based_embeddings(
-            dataset['test'], 
+            test_dataset_with_text, 
             f"{datasetsNames[countDataset]}_test_{bertModel.model_name.split('/')[-1]}",
             text_field='text'
         )
         bertModel.store_sentence_based_embeddings(
-            dataset['train'], 
+            train_dataset_with_text, 
             f"{datasetsNames[countDataset]}_train_{bertModel.model_name.split('/')[-1]}",
             text_field='text'
         )
