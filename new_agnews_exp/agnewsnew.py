@@ -208,13 +208,14 @@ class GenericEncoderModel:
         print(f"Logits shape: {logits.shape}")
         print(f"Logits storage completed in {wall_time:.2f} seconds")
 
-    def store_predictions(self, dataset, predictions, output_csv_path):
+    def store_predictions(self, predictions, labels, output_csv_path):
+        """Store predictions to CSV with just predictions and labels"""
         with open(output_csv_path, mode='w', newline='') as file:
             writer = csv.writer(file)
-            writer.writerow(['prediction', 'label', 'text']) 
-            for text, label, prediction in zip(dataset['text'], dataset['label'], predictions):
-                writer.writerow([prediction, label, text])
-
+            writer.writerow(['prediction', 'label']) 
+            for label, prediction in zip(labels, predictions):
+                writer.writerow([prediction, label])
+            
     def evaluate(self, test_dataset, dataset_name):
         print(f"Starting evaluation for {self.model_name} on {dataset_name}")
         eval_start_time = time.time()
@@ -223,18 +224,20 @@ class GenericEncoderModel:
         output_csv_path = f"metrics_{self.model_name}_{dataset_name}_2.csv"
         
         predictions = []
+        labels = []
         for batch in self.trainer.get_test_dataloader(test_dataset):
             outputs = self.model(**batch)
             logits = outputs.logits
             predicted_class = torch.argmax(logits, dim=-1)
             predictions.extend(predicted_class.cpu().numpy())
+            labels.extend(batch["labels"].cpu().numpy())
 
-        self.store_predictions(self.trainer.eval_dataset, predictions, output_csv_path=f"predictions_{self.model_name}_{dataset_name}_2.csv")
+        self.store_predictions(predictions, labels, output_csv_path=f"predictions_{self.model_name}_{dataset_name}_2.csv")
         
         eval_end_time = time.time()
         eval_wall_time = eval_end_time - eval_start_time
         self.timing_log['evaluation_time'] = eval_wall_time
-        
+    
         with open(output_csv_path, mode='a', newline='') as file:
             writer = csv.writer(file)
             file_is_empty = file.tell() == 0
@@ -252,7 +255,6 @@ class GenericEncoderModel:
         
         print(f"Evaluation completed in {eval_wall_time:.2f} seconds")
         return metrics
-    
     def store_embeddings_only(self, dataset, dataset_name):
         print(f"Storing embeddings for {dataset_name}")
         start_time = time.time()
