@@ -140,7 +140,7 @@ class GenericEncoderModel:
 
         args = TrainingArguments(
             f"{self.training_file_name}_{dataset_name}_2",
-            eval_strategy = "epoch",
+            evaluation_strategy = "epoch",
             save_strategy = "epoch",
             learning_rate=2e-5,
             per_device_train_batch_size=batch_size,
