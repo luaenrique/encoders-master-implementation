@@ -184,19 +184,25 @@ class GenericEncoderModel:
 
         np.savez(f"logits_{self.model_name}_{dataset_name}.npz", logits=logits, labels=labels)
 
-    def store_predictions(self, dataset, predictions, output_csv_path):
+    def store_predictions(self, dataset, dataset_original, predictions, output_csv_path):
         """
         Store predictions along with true labels to a CSV file.
+        dataset_original: the original dataset with 'text' field (before preprocessing)
         """
-        with open(output_csv_path, mode='w', newline='') as file:
+        with open(output_csv_path, mode='w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             writer.writerow(['prediction', 'label', 'text']) 
-            for text, label, prediction in zip(dataset['text'], dataset['label'], predictions):
+            for text, label, prediction in zip(dataset_original['text'], dataset_original['label'], predictions):
                 writer.writerow([prediction, label, text])
 
-    def evaluate(self, test_dataset, dataset_name):
+    def evaluate(self, test_dataset, dataset_original, dataset_name):
+        """
+        Evaluate model on test dataset.
+        test_dataset: processed dataset (with tokenization)
+        dataset_original: original dataset (with 'text' field)
+        """
         metrics = self.trainer.evaluate()
-        output_csv_path=f"metrics_{self.model_name}_{dataset_name}_2.csv"
+        output_csv_path = f"metrics_{self.model_name}_{dataset_name}_2.csv"
 
         predictions = []
         for batch in self.trainer.get_test_dataloader(test_dataset):
@@ -205,11 +211,16 @@ class GenericEncoderModel:
             predicted_class = torch.argmax(logits, dim=-1)
             predictions.extend(predicted_class.cpu().numpy())
 
-        # Store predictions in CSV file
-        self.store_predictions(self.trainer.eval_dataset, predictions, output_csv_path=f"predictions_{self.model_name}_{dataset_name}_2.csv")
+        # Store predictions in CSV file using original dataset
+        self.store_predictions(
+            test_dataset, 
+            dataset_original, 
+            predictions, 
+            output_csv_path=f"predictions_{self.model_name}_{dataset_name}_2.csv"
+        )
 
         # Write metrics to CSV file
-        with open(output_csv_path, mode='a', newline='') as file:
+        with open(output_csv_path, mode='a', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             file_is_empty = file.tell() == 0
             if file_is_empty:
@@ -434,6 +445,11 @@ for countDataset in range(0, len(datasets)):
         )
         test_dataset = test_dataset.rename_column('intent', 'label')
         
+        # Guardando referência aos datasets originais ANTES de remover colunas
+        train_dataset_original = train_dataset
+        validation_dataset_original = validation_dataset
+        test_dataset_original = test_dataset
+        
         # Removendo colunas desnecessárias do dataset de treino (para tokenização)
         train_dataset_processed = train_dataset.remove_columns([structure['contentKey']])
         validation_dataset_processed = validation_dataset.remove_columns([structure['contentKey']])
@@ -456,9 +472,9 @@ for countDataset in range(0, len(datasets)):
             dataset_name=datasetsNames[countDataset]
         )
 
-        # Avaliação no conjunto de teste
+        # Avaliação no conjunto de teste - PASSANDO DATASET ORIGINAL
         print(f"\nAvaliação do modelo {bertModel.model_name}:")
-        metrics = bertModel.evaluate(test_dataset_processed, dataset_name=datasetsNames[countDataset])
+        metrics = bertModel.evaluate(test_dataset_processed, test_dataset_original, dataset_name=datasetsNames[countDataset])
         print(metrics)
 
         # Salvando logits e embeddings
@@ -481,17 +497,17 @@ for countDataset in range(0, len(datasets)):
         
         # Usando os datasets originais que contêm o campo 'text'
         bertModel.store_sentence_based_embeddings(
-            train_dataset, 
+            train_dataset_original, 
             f"clincoos_train_{bertModel.model_name.split('/')[-1]}",
             text_field='text'
         )
         bertModel.store_sentence_based_embeddings(
-            validation_dataset, 
+            validation_dataset_original, 
             f"clincoos_val_{bertModel.model_name.split('/')[-1]}",
             text_field='text'
         )
         bertModel.store_sentence_based_embeddings(
-            test_dataset, 
+            test_dataset_original, 
             f"clincoos_test_{bertModel.model_name.split('/')[-1]}",
             text_field='text'
         )
