@@ -182,16 +182,25 @@ class GenericEncoderModel:
 
         np.savez(f"logits_{self.model_name}_{dataset_name}.npz", logits=logits, labels=labels)
 
-    def store_predictions(self, dataset, predictions, output_csv_path):
-        with open(output_csv_path, mode='w', newline='') as file:
+    def store_predictions(self, dataset_original, predictions, output_csv_path):
+        """
+        Store predictions along with true labels to a CSV file.
+        dataset_original: the original dataset with 'headline' and 'short_description' fields
+        """
+        with open(output_csv_path, mode='w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             writer.writerow(['prediction', 'label', 'headline', 'short_description']) 
-            for headline, description, label, prediction in zip(dataset['headline'], dataset['short_description'], dataset['label'], predictions):
+            for headline, description, label, prediction in zip(dataset_original['headline'], dataset_original['short_description'], dataset_original['label'], predictions):
                 writer.writerow([prediction, label, headline, description])
 
-    def evaluate(self, test_dataset, dataset_name):
+    def evaluate(self, test_dataset, dataset_original, dataset_name):
+        """
+        Evaluate model on test dataset.
+        test_dataset: processed dataset (with tokenization)
+        dataset_original: original dataset (with 'headline' and 'short_description' fields)
+        """
         metrics = self.trainer.evaluate()
-        output_csv_path=f"metrics_{self.model_name}_{dataset_name}_2.csv"
+        output_csv_path = f"metrics_{self.model_name}_{dataset_name}_2.csv"
 
         predictions = []
         for batch in self.trainer.get_test_dataloader(test_dataset):
@@ -200,9 +209,15 @@ class GenericEncoderModel:
             predicted_class = torch.argmax(logits, dim=-1)
             predictions.extend(predicted_class.cpu().numpy())
 
-        self.store_predictions(self.trainer.eval_dataset, predictions, output_csv_path=f"predictions_{self.model_name}_{dataset_name}_2.csv")
+        # Store predictions in CSV file using original dataset
+        self.store_predictions(
+            dataset_original, 
+            predictions, 
+            output_csv_path=f"predictions_{self.model_name}_{dataset_name}_2.csv"
+        )
 
-        with open(output_csv_path, mode='a', newline='') as file:
+        # Write metrics to CSV file
+        with open(output_csv_path, mode='a', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             file_is_empty = file.tell() == 0
             if file_is_empty:
@@ -214,6 +229,9 @@ class GenericEncoderModel:
         return metrics
 
     def store_embeddings_only(self, dataset, dataset_name):
+        """
+        Store only embeddings (lighter version if you don't need logits).
+        """
         self.model.eval()
         all_embeddings = []
         all_labels = []
@@ -490,18 +508,24 @@ for countDataset in range(0, len(datasets)):
             lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey'][0], structure['contentKey'][1]), 
             batched=True
         )
+        # Guardando referência aos datasets originais ANTES de remover colunas
+        train_dataset_original = train_dataset
         train_dataset_processed = train_dataset.remove_columns(['short_description', 'headline', 'category'])
 
         validation_dataset = dataset['validation'].map(
             lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey'][0], structure['contentKey'][1]), 
             batched=True
         )
+        # Guardando referência aos datasets originais ANTES de remover colunas
+        validation_dataset_original = validation_dataset
         validation_dataset_processed = validation_dataset.remove_columns(['short_description', 'headline', 'category'])
         
         test_dataset = dataset['test'].map(
             lambda x: preprocess_function(x, bertModel.tokenizer, structure['contentKey'][0], structure['contentKey'][1]), 
             batched=True
         )
+        # Guardando referência aos datasets originais ANTES de remover colunas
+        test_dataset_original = test_dataset
         test_dataset_processed = test_dataset.remove_columns(['short_description', 'headline', 'category'])
         
         example = train_dataset_processed[0]
@@ -520,7 +544,7 @@ for countDataset in range(0, len(datasets)):
         )
 
         print(f"\nAvaliação do modelo {bertModel.model_name}:")
-        metrics = bertModel.evaluate(test_dataset_processed, dataset_name=datasetsNames[countDataset])
+        metrics = bertModel.evaluate(test_dataset_processed, test_dataset_original, dataset_name=datasetsNames[countDataset])
         print(metrics)
 
         print("\n" + "="*60)
@@ -543,19 +567,19 @@ for countDataset in range(0, len(datasets)):
         
         # Usando os datasets originais que contêm os campos headline e short_description
         bertModel.store_sentence_based_embeddings(
-            train_dataset, 
+            train_dataset_original, 
             f"huffpost_train_{bertModel.model_name.split('/')[-1]}",
             headline_field='headline',
             description_field='short_description'
         )
         bertModel.store_sentence_based_embeddings(
-            validation_dataset, 
+            validation_dataset_original, 
             f"huffpost_val_{bertModel.model_name.split('/')[-1]}",
             headline_field='headline',
             description_field='short_description'
         )
         bertModel.store_sentence_based_embeddings(
-            test_dataset, 
+            test_dataset_original, 
             f"huffpost_test_{bertModel.model_name.split('/')[-1]}",
             headline_field='headline',
             description_field='short_description'
